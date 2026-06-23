@@ -10,6 +10,9 @@
 
 ## 기술
 <!-- 기술 관련 학습 -->
+- 문서 텍스트 추출(브라우저): PDF는 pdf.js(`pdfjsLib`, workerSrc 설정 필요), Word(docx)는 mammoth.js(`mammoth.extractRawText`). 둘 다 CDN 로드. (.doc 구버전은 미지원, docx만)
+- 데이터 저장 위치: 모든 프로필 데이터(업로드 문서 추출 텍스트 포함)는 브라우저 localStorage('profile')에만 저장. 서버 전송은 생성 요청 시뿐. 업로드 문서는 `refCover`/`refResume` 키에 텍스트로 보관.
+- 생성 프롬프트: 기존 문서는 `"""..."""` 블록으로 감싸 "복사 금지, 문체·톤만 참고" 지시와 함께 전달.
 
 ## 워크플로우
 <!-- 작업 방식 관련 -->

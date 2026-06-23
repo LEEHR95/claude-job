@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GO 취업 - AI 기반 이력서 생성 및 공고 분석</title>
+    <title>GO 취업 - 채용공고 기반 지원 전략 도구</title>
     <style>
         * {
             margin: 0;
@@ -42,21 +42,24 @@
         header p {
             font-size: 16px;
             opacity: 0.9;
+            line-height: 1.6;
         }
 
         .tabs {
             display: flex;
+            flex-wrap: wrap;
             border-bottom: 2px solid #e0e0e0;
             background: #f5f5f5;
         }
 
         .tab-button {
             flex: 1;
-            padding: 15px 20px;
+            min-width: 120px;
+            padding: 15px 10px;
             border: none;
             background: none;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 500;
             color: #666;
             transition: all 0.3s ease;
@@ -84,14 +87,8 @@
         }
 
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .form-group {
@@ -103,6 +100,13 @@
             margin-bottom: 8px;
             font-weight: 500;
             color: #333;
+        }
+
+        .optional-tag {
+            font-weight: 400;
+            font-size: 12px;
+            color: #999;
+            margin-left: 6px;
         }
 
         input, textarea, select {
@@ -128,7 +132,7 @@
 
         .form-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 20px;
         }
 
@@ -149,18 +153,14 @@
             box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
 
-        .button:active {
-            transform: translateY(0);
-        }
+        .button:active { transform: translateY(0); }
 
         .button.secondary {
             background: #f0f0f0;
             color: #333;
         }
 
-        .button.secondary:hover {
-            background: #e0e0e0;
-        }
+        .button.secondary:hover { background: #e0e0e0; }
 
         .button:disabled {
             opacity: 0.6;
@@ -171,6 +171,7 @@
             display: flex;
             gap: 10px;
             margin-top: 20px;
+            flex-wrap: wrap;
         }
 
         .alert {
@@ -180,29 +181,10 @@
             font-size: 14px;
         }
 
-        .alert.info {
-            background: #e3f2fd;
-            color: #1976d2;
-            border-left: 4px solid #1976d2;
-        }
-
-        .alert.success {
-            background: #e8f5e9;
-            color: #388e3c;
-            border-left: 4px solid #388e3c;
-        }
-
-        .alert.error {
-            background: #ffebee;
-            color: #d32f2f;
-            border-left: 4px solid #d32f2f;
-        }
-
-        .alert.warning {
-            background: #fff3e0;
-            color: #f57c00;
-            border-left: 4px solid #f57c00;
-        }
+        .alert.info { background: #e3f2fd; color: #1976d2; border-left: 4px solid #1976d2; }
+        .alert.success { background: #e8f5e9; color: #388e3c; border-left: 4px solid #388e3c; }
+        .alert.error { background: #ffebee; color: #d32f2f; border-left: 4px solid #d32f2f; }
+        .alert.warning { background: #fff3e0; color: #f57c00; border-left: 4px solid #f57c00; }
 
         .output-box {
             background: #f9f9f9;
@@ -213,24 +195,10 @@
             white-space: pre-wrap;
             word-wrap: break-word;
             font-size: 14px;
-            line-height: 1.6;
+            line-height: 1.7;
             color: #333;
-            max-height: 500px;
+            max-height: 600px;
             overflow-y: auto;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0, 0, 0, 0.1);
-            border-radius: 50%;
-            border-top-color: #667eea;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
         }
 
         .profile-info {
@@ -245,19 +213,20 @@
             justify-content: space-between;
             padding: 10px 0;
             border-bottom: 1px solid #e0e0e0;
+            gap: 20px;
         }
 
-        .profile-info-item:last-child {
-            border-bottom: none;
-        }
+        .profile-info-item:last-child { border-bottom: none; }
 
         .profile-info-label {
             font-weight: 500;
             color: #666;
+            white-space: nowrap;
         }
 
         .profile-info-value {
             color: #333;
+            text-align: right;
         }
 
         .skill-tag {
@@ -271,32 +240,10 @@
             font-size: 12px;
         }
 
-        .api-key-input {
-            background: #fff3cd;
-            border: 1px solid #ffc107 !important;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-
-        .api-key-input p {
-            margin-bottom: 10px;
-            font-size: 13px;
-            color: #856404;
-        }
-
         @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            header h1 {
-                font-size: 24px;
-            }
-
-            .tab-content {
-                padding: 20px;
-            }
+            .form-row { grid-template-columns: 1fr; }
+            header h1 { font-size: 24px; }
+            .tab-content { padding: 20px; }
         }
     </style>
 </head>
@@ -304,42 +251,27 @@
     <div class="container">
         <header>
             <h1>🚀 GO 취업</h1>
-            <p>AI 기반 이력서 생성 및 채용 공고 직무 매칭 도구</p>
+            <p>채용공고를 분석하고<br>당신의 경험을 연결해 지원 전략을 제안합니다</p>
         </header>
 
         <div class="tabs">
-            <button class="tab-button active" onclick="showTab('profile')">📋 프로필</button>
-            <button class="tab-button" onclick="showTab('resume')">📄 이력서 생성</button>
-            <button class="tab-button" onclick="showTab('analysis')">🎯 공고 분석</button>
-            <button class="tab-button" onclick="showTab('settings')">⚙️ 설정</button>
+            <button class="tab-button active" onclick="showTab('profile', this)">📋 프로필</button>
+            <button class="tab-button" onclick="showTab('analysis', this)">🎯 공고 분석</button>
+            <button class="tab-button" onclick="showTab('cover', this)">✍️ 자기소개서 초안</button>
+            <button class="tab-button" onclick="showTab('resume', this)">📄 이력서 생성</button>
+            <button class="tab-button" onclick="showTab('settings', this)">⚙️ 설정</button>
         </div>
 
         <!-- 프로필 탭 -->
         <div id="profile" class="tab-content active">
             <h2>📋 프로필 관리</h2>
-            <p style="color: #666; margin-bottom: 20px;">당신의 정보를 입력하고 저장하세요. 모든 데이터는 로컬에 저장됩니다.</p>
+            <p style="color: #666; margin-bottom: 20px;">지원 전략의 기반이 되는 정보입니다. 모든 데이터는 브라우저에만 저장됩니다.</p>
 
             <div id="profileInfo"></div>
 
             <div class="form-group">
-                <label for="name">이름</label>
-                <input type="text" id="name" placeholder="예: 김철수">
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="email">이메일</label>
-                    <input type="email" id="email" placeholder="you@example.com">
-                </div>
-                <div class="form-group">
-                    <label for="phone">전화번호</label>
-                    <input type="tel" id="phone" placeholder="010-1234-5678">
-                </div>
-            </div>
-
-            <div class="form-group">
                 <label for="position">지원 직무</label>
-                <input type="text" id="position" placeholder="예: 프론트엔드 개발자, 데이터 과학자">
+                <input type="text" id="position" placeholder="예: 프론트엔드 개발자, 데이터 분석가">
             </div>
 
             <div class="form-group">
@@ -348,18 +280,49 @@
             </div>
 
             <div class="form-group">
-                <label for="skills">주요 스킬 (쉼표로 구분)</label>
+                <label for="skills">기술 스택 <span class="optional-tag">쉼표로 구분</span></label>
                 <textarea id="skills" placeholder="예: Python, React, SQL, AWS"></textarea>
             </div>
 
             <div class="form-group">
-                <label for="education">학력</label>
-                <textarea id="education" placeholder="예: 서울대학교 컴퓨터공학과 졸업 (2020)"></textarea>
+                <label for="projects">프로젝트 경험</label>
+                <textarea id="projects" placeholder="주요 프로젝트와 본인의 역할, 성과를 적어주세요."></textarea>
             </div>
 
             <div class="form-group">
-                <label for="experience_desc">경력 기술</label>
-                <textarea id="experience_desc" placeholder="주요 프로젝트, 업적, 책임 사항 등을 간단히 적어주세요."></textarea>
+                <label for="strengths">강점</label>
+                <textarea id="strengths" placeholder="직무와 관련된 본인의 강점을 적어주세요."></textarea>
+            </div>
+
+            <h3 style="margin: 30px 0 15px; color: #666; font-size: 15px;">📎 기존 문서 <span class="optional-tag">선택 · 문체/톤 참고용</span></h3>
+            <p style="color: #666; margin-bottom: 15px; font-size: 13px;">가지고 있는 자기소개서·이력서를 올리면, 생성 시 그 문체와 톤을 참고합니다. PDF · Word(docx) 지원.</p>
+
+            <div class="form-group">
+                <label>기존 자기소개서</label>
+                <input type="file" id="refCoverFile" accept=".pdf,.docx" onchange="handleDocUpload(event, 'refCover')">
+                <div id="refCoverStatus" style="margin-top: 8px; font-size: 13px; color: #666;"></div>
+            </div>
+
+            <div class="form-group">
+                <label>기존 이력서</label>
+                <input type="file" id="refResumeFile" accept=".pdf,.docx" onchange="handleDocUpload(event, 'refResume')">
+                <div id="refResumeStatus" style="margin-top: 8px; font-size: 13px; color: #666;"></div>
+            </div>
+
+            <h3 style="margin: 30px 0 15px; color: #666; font-size: 15px;">선택 정보</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="name">이름 <span class="optional-tag">선택</span></label>
+                    <input type="text" id="name" placeholder="예: 김철수">
+                </div>
+                <div class="form-group">
+                    <label for="email">이메일 <span class="optional-tag">선택</span></label>
+                    <input type="email" id="email" placeholder="you@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="phone">전화번호 <span class="optional-tag">선택</span></label>
+                    <input type="tel" id="phone" placeholder="010-1234-5678">
+                </div>
             </div>
 
             <div class="button-group">
@@ -368,38 +331,16 @@
             </div>
         </div>
 
-        <!-- 이력서 생성 탭 -->
-        <div id="resume" class="tab-content">
-            <h2>📄 AI 이력서 생성</h2>
-            <p style="color: #666; margin-bottom: 20px;">저장된 프로필을 기반으로 AI가 이력서를 생성합니다.</p>
-
-            <div id="resumeAlert"></div>
-
-            <div class="form-group">
-                <label for="jobTitle">지원 기업 및 직무 (선택사항)</label>
-                <input type="text" id="jobTitle" placeholder="예: 카카오 - 백엔드 개발자">
-            </div>
-
-            <div class="form-group">
-                <label for="additionalInfo">추가 정보 (선택사항)</label>
-                <textarea id="additionalInfo" placeholder="이력서에 포함하고 싶은 추가 정보나 강조할 사항"></textarea>
-            </div>
-
-            <button class="button" onclick="generateResume()">✨ 이력서 생성</button>
-
-            <div id="resumeOutput"></div>
-        </div>
-
         <!-- 공고 분석 탭 -->
         <div id="analysis" class="tab-content">
-            <h2>🎯 채용 공고 직무 매칭</h2>
-            <p style="color: #666; margin-bottom: 20px;">채용 공고를 입력하면 당신과의 적합도를 분석합니다.</p>
+            <h2>🎯 채용 공고 분석 & 지원 전략</h2>
+            <p style="color: #666; margin-bottom: 20px;">공고를 붙여넣으면 핵심 요구사항, 내 경험과의 연결, 부족한 부분, 면접 질문, 지원 전략을 정리해드립니다.</p>
 
             <div id="analysisAlert"></div>
 
             <div class="form-group">
                 <label for="jobPosting">채용 공고</label>
-                <textarea id="jobPosting" placeholder="채용 공고 전체 내용을 여기에 붙여넣기하세요."></textarea>
+                <textarea id="jobPosting" placeholder="채용 공고 전체 내용을 여기에 붙여넣으세요." style="min-height: 150px;"></textarea>
             </div>
 
             <button class="button" onclick="analyzePosting()">🔍 분석</button>
@@ -407,106 +348,226 @@
             <div id="analysisOutput"></div>
         </div>
 
+        <!-- 자기소개서 초안 탭 -->
+        <div id="cover" class="tab-content">
+            <h2>✍️ 자기소개서 초안</h2>
+            <p style="color: #666; margin-bottom: 20px;">공고와 프로필을 연결해 지원 동기 · 직무 역량 · 문제 해결 경험 · 입사 후 포부 초안을 생성합니다.</p>
+
+            <div id="coverAlert"></div>
+
+            <div class="form-group">
+                <label for="coverPosting">채용 공고</label>
+                <textarea id="coverPosting" placeholder="채용 공고 전체 내용을 여기에 붙여넣으세요." style="min-height: 150px;"></textarea>
+            </div>
+
+            <button class="button" onclick="generateCoverLetter()">✨ 자기소개서 초안 생성</button>
+
+            <div id="coverOutput"></div>
+        </div>
+
+        <!-- 이력서 생성 탭 -->
+        <div id="resume" class="tab-content">
+            <h2>📄 이력서 생성</h2>
+            <p style="color: #666; margin-bottom: 20px;">저장된 프로필을 기반으로 이력서 초안을 생성합니다.</p>
+
+            <div id="resumeAlert"></div>
+
+            <div class="form-group">
+                <label for="jobTitle">지원 기업 및 직무 <span class="optional-tag">선택</span></label>
+                <input type="text" id="jobTitle" placeholder="예: 카카오 - 백엔드 개발자">
+            </div>
+
+            <div class="form-group">
+                <label for="additionalInfo">추가 정보 <span class="optional-tag">선택</span></label>
+                <textarea id="additionalInfo" placeholder="이력서에 강조하고 싶은 사항"></textarea>
+            </div>
+
+            <button class="button" onclick="generateResume()">✨ 이력서 생성</button>
+
+            <div id="resumeOutput"></div>
+        </div>
+
         <!-- 설정 탭 -->
         <div id="settings" class="tab-content">
             <h2>⚙️ 설정</h2>
 
             <div class="alert info">
-                <p>✅ <strong>API 키 설정 완료</strong></p>
-                <p>API 키는 Vercel 서버 환경 변수에 안전하게 저장되어 있습니다.</p>
+                <p>✅ <strong>AI 연결됨</strong> — Solar Pro 2 모델을 사용합니다. API 키는 서버 환경 변수에 안전하게 보관됩니다.</p>
             </div>
-
-            <div class="form-group">
-                <label for="model">AI 모델</label>
-                <select id="model">
-                    <option value="claude-opus-4-8">Claude 3.5 Opus (최고 성능)</option>
-                    <option value="claude-sonnet-4-6" selected>Claude 3.5 Sonnet (추천)</option>
-                    <option value="claude-haiku-4-5">Claude 3.5 Haiku (빠름)</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="tone">작성 톤</label>
-                <select id="tone">
-                    <option value="formal" selected>정중함 (정식 이력서)</option>
-                    <option value="casual">자연스러움 (자기소개서)</option>
-                    <option value="technical">기술적 (기술 중심)</option>
-                </select>
-            </div>
-
-            <div class="button-group">
-                <button class="button" onclick="saveSettings()">💾 설정 저장</button>
-                <button class="button secondary" onclick="testApi()">🧪 API 연결 테스트</button>
-            </div>
-
-            <div id="settingsOutput"></div>
-
-            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e0e0e0;">
 
             <h3 style="margin-top: 30px; margin-bottom: 15px;">📊 데이터 관리</h3>
-            <button class="button secondary" onclick="exportData()">📤 데이터 내보내기</button>
-            <button class="button secondary" onclick="importData()">📥 데이터 가져오기</button>
-            <button class="button secondary" onclick="clearAllData()" style="background: #ffebee; color: #d32f2f;">🗑️ 모든 데이터 삭제</button>
+            <p style="color: #666; margin-bottom: 15px;">프로필 데이터는 이 브라우저에만 저장됩니다. 백업하거나 다른 기기로 옮길 때 사용하세요.</p>
+            <div class="button-group">
+                <button class="button secondary" onclick="exportData()">📤 데이터 내보내기</button>
+                <button class="button secondary" onclick="importData()">📥 데이터 가져오기</button>
+                <button class="button secondary" onclick="clearAllData()" style="background: #ffebee; color: #d32f2f;">🗑️ 모든 데이터 삭제</button>
+            </div>
+            <div id="settingsOutput"></div>
         </div>
     </div>
 
+    <!-- 문서 텍스트 추출 라이브러리 (PDF, Word) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script>
-        const API_ENDPOINT = '/api/claude';
+        if (window.pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc =
+                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        const ENDPOINTS = {
+            resume: '/api/generate-resume',
+            analysis: '/api/analyze-job',
+            cover: '/api/generate-cover-letter',
+        };
 
         // 탭 전환
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
+        function showTab(tabName, btn) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
             document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
+            btn.classList.add('active');
+        }
+
+        // 프로필 읽기
+        function getProfile() {
+            return JSON.parse(localStorage.getItem('profile') || '{}');
         }
 
         // 프로필 저장
         function saveProfile() {
+            const prev = getProfile();
             const profile = {
-                name: document.getElementById('name').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
                 position: document.getElementById('position').value,
                 experience: document.getElementById('experience').value,
                 skills: document.getElementById('skills').value,
-                education: document.getElementById('education').value,
-                experience_desc: document.getElementById('experience_desc').value,
+                projects: document.getElementById('projects').value,
+                strengths: document.getElementById('strengths').value,
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                // 업로드한 기존 문서(참고용)는 폼이 아닌 상태에서 보존
+                refCover: prev.refCover || '',
+                refCoverName: prev.refCoverName || '',
+                refResume: prev.refResume || '',
+                refResumeName: prev.refResumeName || '',
             };
 
-            if (!profile.name) {
-                alert('이름을 입력해주세요.');
+            if (!profile.position) {
+                alert('지원 직무를 입력해주세요.');
                 return;
             }
 
             localStorage.setItem('profile', JSON.stringify(profile));
-            showAlert('profileInfo', '✅ 프로필이 저장되었습니다.', 'success');
             displayProfile();
+            showAlert('profileInfo', '✅ 프로필이 저장되었습니다.', 'success');
         }
 
-        // 프로필 표시
+        // 프로필 입력란 채우기
+        function fillProfileForm() {
+            const p = getProfile();
+            ['position', 'experience', 'skills', 'projects', 'strengths', 'name', 'email', 'phone'].forEach(id => {
+                if (p[id] !== undefined) document.getElementById(id).value = p[id];
+            });
+        }
+
+        // 기존 문서 업로드 처리 (PDF/Word → 텍스트 추출 후 프로필에 저장)
+        async function handleDocUpload(event, field) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const statusId = field + 'Status';
+            const nameField = field + 'Name';
+            const ext = file.name.split('.').pop().toLowerCase();
+
+            document.getElementById(statusId).innerHTML =
+                `⏳ "${file.name}" 텍스트 추출 중...`;
+
+            try {
+                let text = '';
+                const buffer = await file.arrayBuffer();
+
+                if (ext === 'pdf') {
+                    text = await extractPdfText(buffer);
+                } else if (ext === 'docx') {
+                    const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+                    text = result.value;
+                } else {
+                    throw new Error('PDF 또는 Word(docx) 파일만 지원합니다.');
+                }
+
+                text = text.trim();
+                if (!text) throw new Error('파일에서 텍스트를 찾지 못했습니다.');
+
+                // 프로필에 즉시 병합 저장
+                const profile = getProfile();
+                profile[field] = text;
+                profile[nameField] = file.name;
+                localStorage.setItem('profile', JSON.stringify(profile));
+
+                displayDocStatus();
+            } catch (error) {
+                document.getElementById(statusId).innerHTML =
+                    `<span style="color:#d32f2f;">❌ ${error.message}</span>`;
+            }
+        }
+
+        // PDF 텍스트 추출
+        async function extractPdfText(arrayBuffer) {
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let text = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                text += content.items.map(it => it.str).join(' ') + '\n';
+            }
+            return text;
+        }
+
+        // 업로드한 문서 상태 표시
+        function displayDocStatus() {
+            const p = getProfile();
+            [['refCover', 'refCoverName'], ['refResume', 'refResumeName']].forEach(([field, nameField]) => {
+                const statusEl = document.getElementById(field + 'Status');
+                if (!statusEl) return;
+                if (p[field]) {
+                    const len = p[field].length;
+                    statusEl.innerHTML =
+                        `<span style="color:#388e3c;">✅ ${p[nameField] || '문서'} (${len.toLocaleString()}자)</span>
+                         <button class="button secondary" style="padding:4px 10px; font-size:12px; margin-left:8px;" onclick="removeDoc('${field}')">삭제</button>`;
+                } else {
+                    statusEl.innerHTML = '';
+                }
+            });
+        }
+
+        // 업로드한 문서 삭제
+        function removeDoc(field) {
+            const profile = getProfile();
+            delete profile[field];
+            delete profile[field + 'Name'];
+            localStorage.setItem('profile', JSON.stringify(profile));
+            const input = document.getElementById(field + 'File');
+            if (input) input.value = '';
+            displayDocStatus();
+        }
+
+        // 프로필 요약 표시
         function displayProfile() {
-            const profile = JSON.parse(localStorage.getItem('profile') || '{}');
+            const profile = getProfile();
             const container = document.getElementById('profileInfo');
 
-            if (!profile.name) {
+            if (!profile.position) {
                 container.innerHTML = '';
                 return;
             }
 
-            const skills = profile.skills ? profile.skills.split(',').map(s => `<span class="skill-tag">${s.trim()}</span>`).join('') : '';
+            const skills = profile.skills
+                ? profile.skills.split(',').map(s => `<span class="skill-tag">${s.trim()}</span>`).join('')
+                : '-';
 
             container.innerHTML = `
                 <div class="profile-info">
-                    <div class="profile-info-item">
-                        <span class="profile-info-label">이름</span>
-                        <span class="profile-info-value">${profile.name}</span>
-                    </div>
                     <div class="profile-info-item">
                         <span class="profile-info-label">지원 직무</span>
                         <span class="profile-info-value">${profile.position || '-'}</span>
@@ -516,8 +577,8 @@
                         <span class="profile-info-value">${profile.experience || '-'} 년</span>
                     </div>
                     <div class="profile-info-item">
-                        <span class="profile-info-label">스킬</span>
-                        <div style="width: 60%;">${skills || '-'}</div>
+                        <span class="profile-info-label">기술 스택</span>
+                        <div class="profile-info-value">${skills}</div>
                     </div>
                 </div>
             `;
@@ -526,219 +587,124 @@
         // 프로필 초기화
         function clearProfile() {
             if (confirm('프로필을 초기화하시겠습니까?')) {
-                document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="number"], textarea').forEach(el => {
-                    if (!el.id.startsWith('job') && !el.id.startsWith('additional') && !el.id.startsWith('api') && el.id !== 'model' && el.id !== 'tone') {
-                        el.value = '';
-                    }
+                ['position', 'experience', 'skills', 'projects', 'strengths', 'name', 'email', 'phone']
+                    .forEach(id => { document.getElementById(id).value = ''; });
+                ['refCoverFile', 'refResumeFile'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
                 });
                 localStorage.removeItem('profile');
                 document.getElementById('profileInfo').innerHTML = '';
+                displayDocStatus();
                 showAlert('profileInfo', '✅ 프로필이 초기화되었습니다.', 'success');
             }
         }
 
-        // 이력서 생성
-        async function generateResume() {
-            const profile = JSON.parse(localStorage.getItem('profile') || '{}');
-
-            if (!profile.name) {
-                showAlert('resumeAlert', '⚠️ 먼저 프로필을 저장해주세요.', 'warning');
-                return;
-            }
-
-            const jobTitle = document.getElementById('jobTitle').value;
-            const additionalInfo = document.getElementById('additionalInfo').value;
-            const model = localStorage.getItem('model') || 'claude-sonnet-4-6';
-            const tone = localStorage.getItem('tone') || 'formal';
-
-            const prompt = `다음 정보를 바탕으로 한국어 이력서를 작성해주세요.
-
-이름: ${profile.name}
-이메일: ${profile.email}
-전화: ${profile.phone}
-지원 직무: ${profile.position}
-경력: ${profile.experience}년
-학력: ${profile.education}
-스킬: ${profile.skills}
-경력 기술:
-${profile.experience_desc}
-
-${jobTitle ? `지원 기업/직무: ${jobTitle}` : ''}
-${additionalInfo ? `추가 정보: ${additionalInfo}` : ''}
-
-톤: ${tone === 'formal' ? '정중하고 전문적' : tone === 'casual' ? '자연스럽고 친근' : '기술적이고 구체적'}
-
-한국어로 된 전문적이고 설득력 있는 이력서를 작성해주세요.`;
-
-            showAlert('resumeAlert', '⏳ 이력서를 생성 중입니다...', 'info');
-            document.getElementById('resumeOutput').innerHTML = '';
+        // 공통 API 호출 + 출력 렌더링
+        async function callAndRender({ endpoint, payload, alertId, outputId, loadingMsg, successMsg, filePrefix }) {
+            showAlert(alertId, loadingMsg, 'info');
+            document.getElementById(outputId).innerHTML = '';
 
             try {
-                const response = await fetch(API_ENDPOINT, {
+                const response = await fetch(endpoint, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: model,
-                        max_tokens: 2000,
-                        messages: [
-                            { role: 'user', content: prompt }
-                        ]
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
                 });
 
+                const data = await response.json();
                 if (!response.ok) {
-                    throw new Error(`서버 오류: ${response.status}`);
+                    throw new Error(data.error || `서버 오류: ${response.status}`);
                 }
 
-                const data = await response.json();
-                const resume = data.content[0].text;
-
-                showAlert('resumeAlert', '✅ 이력서가 생성되었습니다.', 'success');
-                document.getElementById('resumeOutput').innerHTML = `
-                    <div class="output-box">${resume}</div>
+                showAlert(alertId, successMsg, 'success');
+                document.getElementById(outputId).innerHTML = `
+                    <div class="output-box">${escapeHtml(data.text)}</div>
                     <div style="margin-top: 15px;">
-                        <button class="button secondary" onclick="copyToClipboard('resumeOutput')">📋 복사</button>
-                        <button class="button secondary" onclick="downloadText('resume_${new Date().getTime()}.txt', document.querySelector('#resumeOutput .output-box').innerText)">⬇️ 다운로드</button>
+                        <button class="button secondary" onclick="copyToClipboard('${outputId}')">📋 복사</button>
+                        <button class="button secondary" onclick="downloadText('${filePrefix}_${Date.now()}.txt', document.querySelector('#${outputId} .output-box').innerText)">⬇️ 다운로드</button>
                     </div>
                 `;
             } catch (error) {
-                showAlert('resumeAlert', `❌ 오류: ${error.message}`, 'error');
+                showAlert(alertId, `❌ 오류: ${error.message}`, 'error');
             }
         }
 
         // 공고 분석
         async function analyzePosting() {
-            const profile = JSON.parse(localStorage.getItem('profile') || '{}');
-            const posting = document.getElementById('jobPosting').value;
+            const profile = getProfile();
+            const jobPosting = document.getElementById('jobPosting').value;
 
-            if (!posting) {
-                showAlert('analysisAlert', '⚠️ 채용 공고를 입력해주세요.', 'warning');
-                return;
-            }
+            if (!jobPosting.trim()) return showAlert('analysisAlert', '⚠️ 채용 공고를 입력해주세요.', 'warning');
+            if (!profile.position) return showAlert('analysisAlert', '⚠️ 먼저 프로필을 저장해주세요.', 'warning');
 
-            if (!profile.name) {
-                showAlert('analysisAlert', '⚠️ 먼저 프로필을 저장해주세요.', 'warning');
-                return;
-            }
-
-            const model = localStorage.getItem('model') || 'claude-sonnet-4-6';
-
-            const prompt = `다음은 지원자의 프로필입니다:
-이름: ${profile.name}
-지원 직무: ${profile.position}
-경력: ${profile.experience}년
-스킬: ${profile.skills}
-학력: ${profile.education}
-
-다음은 채용 공고입니다:
-${posting}
-
-이 채용 공고에 대해 지원자의 적합도를 다음 항목으로 분석해주세요:
-1. 직무 적합도 (0-100%)
-2. 스킬 매칭율
-3. 경력 요구사항 충족도
-4. 강점 (3가지)
-5. 약점 또는 개선 필요 영역 (3가지)
-6. 지원 전 준비 사항
-
-한국어로 분석해주세요.`;
-
-            showAlert('analysisAlert', '⏳ 공고를 분석 중입니다...', 'info');
-            document.getElementById('analysisOutput').innerHTML = '';
-
-            try {
-                const response = await fetch(API_ENDPOINT, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: model,
-                        max_tokens: 2000,
-                        messages: [
-                            { role: 'user', content: prompt }
-                        ]
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`서버 오류: ${response.status}`);
-                }
-
-                const data = await response.json();
-                const analysis = data.content[0].text;
-
-                showAlert('analysisAlert', '✅ 분석이 완료되었습니다.', 'success');
-                document.getElementById('analysisOutput').innerHTML = `
-                    <div class="output-box">${analysis}</div>
-                    <div style="margin-top: 15px;">
-                        <button class="button secondary" onclick="copyToClipboard('analysisOutput')">📋 복사</button>
-                        <button class="button secondary" onclick="downloadText('analysis_${new Date().getTime()}.txt', document.querySelector('#analysisOutput .output-box').innerText)">⬇️ 다운로드</button>
-                    </div>
-                `;
-            } catch (error) {
-                showAlert('analysisAlert', `❌ 오류: ${error.message}`, 'error');
-            }
+            await callAndRender({
+                endpoint: ENDPOINTS.analysis,
+                payload: { profile, jobPosting },
+                alertId: 'analysisAlert',
+                outputId: 'analysisOutput',
+                loadingMsg: '⏳ 공고를 분석하고 지원 전략을 정리 중입니다...',
+                successMsg: '✅ 분석이 완료되었습니다.',
+                filePrefix: 'analysis',
+            });
         }
 
-        // 설정 저장
-        function saveSettings() {
-            const model = document.getElementById('model').value;
-            const tone = document.getElementById('tone').value;
+        // 자기소개서 초안
+        async function generateCoverLetter() {
+            const profile = getProfile();
+            const jobPosting = document.getElementById('coverPosting').value;
 
-            localStorage.setItem('model', model);
-            localStorage.setItem('tone', tone);
+            if (!jobPosting.trim()) return showAlert('coverAlert', '⚠️ 채용 공고를 입력해주세요.', 'warning');
+            if (!profile.position) return showAlert('coverAlert', '⚠️ 먼저 프로필을 저장해주세요.', 'warning');
 
-            showAlert('settingsOutput', '✅ 설정이 저장되었습니다.', 'success');
+            await callAndRender({
+                endpoint: ENDPOINTS.cover,
+                payload: { profile, jobPosting },
+                alertId: 'coverAlert',
+                outputId: 'coverOutput',
+                loadingMsg: '⏳ 자기소개서 초안을 작성 중입니다...',
+                successMsg: '✅ 자기소개서 초안이 생성되었습니다.',
+                filePrefix: 'cover_letter',
+            });
         }
 
-        // API 테스트
-        async function testApi() {
-            showAlert('settingsOutput', '⏳ 서버 연결을 테스트 중입니다...', 'info');
+        // 이력서 생성
+        async function generateResume() {
+            const profile = getProfile();
+            if (!profile.position) return showAlert('resumeAlert', '⚠️ 먼저 프로필을 저장해주세요.', 'warning');
 
-            try {
-                const response = await fetch(API_ENDPOINT, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: 'claude-haiku-4-5',
-                        max_tokens: 100,
-                        messages: [
-                            { role: 'user', content: '간단히 "연결 성공"이라고 답변해주세요.' }
-                        ]
-                    })
-                });
-
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        throw new Error('API 키가 서버에 설정되지 않았습니다.');
-                    }
-                    throw new Error(`서버 오류: ${response.status}`);
-                }
-
-                const data = await response.json();
-                showAlert('settingsOutput', `✅ 서버 연결 성공! (응답: "${data.content[0].text.trim()}")`, 'success');
-            } catch (error) {
-                showAlert('settingsOutput', `❌ 연결 실패: ${error.message}`, 'error');
-            }
+            await callAndRender({
+                endpoint: ENDPOINTS.resume,
+                payload: {
+                    profile,
+                    jobTitle: document.getElementById('jobTitle').value,
+                    additionalInfo: document.getElementById('additionalInfo').value,
+                },
+                alertId: 'resumeAlert',
+                outputId: 'resumeOutput',
+                loadingMsg: '⏳ 이력서를 생성 중입니다...',
+                successMsg: '✅ 이력서가 생성되었습니다.',
+                filePrefix: 'resume',
+            });
         }
 
         // 알림 표시
         function showAlert(containerId, message, type) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = `<div class="alert ${type}">${message}</div>`;
+            document.getElementById(containerId).innerHTML = `<div class="alert ${type}">${message}</div>`;
+        }
+
+        // HTML 이스케이프 (출력 안전)
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
         }
 
         // 텍스트 복사
         function copyToClipboard(elementId) {
             const text = document.querySelector(`#${elementId} .output-box`).innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('클립보드에 복사되었습니다.');
-            });
+            navigator.clipboard.writeText(text).then(() => alert('클립보드에 복사되었습니다.'));
         }
 
         // 파일 다운로드
@@ -756,11 +722,8 @@ ${posting}
         function exportData() {
             const data = {
                 profile: localStorage.getItem('profile'),
-                model: localStorage.getItem('model'),
-                tone: localStorage.getItem('tone'),
-                exportDate: new Date().toISOString()
+                exportDate: new Date().toISOString(),
             };
-
             downloadText('go_data.json', JSON.stringify(data, null, 2));
             alert('데이터가 다운로드되었습니다.');
         }
@@ -777,10 +740,9 @@ ${posting}
                     try {
                         const data = JSON.parse(event.target.result);
                         if (data.profile) localStorage.setItem('profile', data.profile);
-                        if (data.model) localStorage.setItem('model', data.model);
-                        if (data.tone) localStorage.setItem('tone', data.tone);
-                        loadSettings();
+                        fillProfileForm();
                         displayProfile();
+                        displayDocStatus();
                         showAlert('settingsOutput', '✅ 데이터를 불러왔습니다.', 'success');
                     } catch (error) {
                         showAlert('settingsOutput', '❌ 파일 형식이 잘못되었습니다.', 'error');
@@ -799,19 +761,11 @@ ${posting}
             }
         }
 
-        // 설정 로드
-        function loadSettings() {
-            const model = localStorage.getItem('model');
-            const tone = localStorage.getItem('tone');
-
-            if (model) document.getElementById('model').value = model;
-            if (tone) document.getElementById('tone').value = tone;
-        }
-
         // 페이지 로드
         window.addEventListener('load', () => {
-            loadSettings();
+            fillProfileForm();
             displayProfile();
+            displayDocStatus();
         });
     </script>
 </body>

@@ -3,18 +3,21 @@
 ## 마지막 세션
 <!-- /co가 이 섹션 전체를 덮어씁니다 (다음 "##"까지) -->
 - 날짜: 2026-06-23
-- 요약: API 키 보안 강화. 클라이언트 직접 API 호출 → Vercel Function 프록시로 변경. api/claude.js, vercel.json, README.md 추가. 환경 변수로 키 관리.
-- 다음 할 일: Vercel 배포. 환경 변수 설정 후 실제 동작 테스트.
+- 요약: 프로필에 기존 자소서·이력서 업로드 기능 추가. PDF는 pdf.js, Word(docx)는 mammoth.js로 브라우저에서 텍스트 추출 → localStorage 저장 → 자소서/이력서 생성 시 "문체·톤 참고용"으로 프롬프트에 삽입. index.html + api/generate-cover-letter.js + api/generate-resume.js 수정.
+- 다음 할 일: 실제 PDF/docx 업로드 동작 테스트. Vercel 배포 후 환경 변수 설정 및 생성 결과 확인.
 
 ## 의사결정 이력
 
 | 날짜 | 결정 | 이유 | 대안 |
 |------|------|------|------|
 | 2026-06-23 | Vercel Functions로 API 키 관리 | 보안 강화 (키가 서버에만 저장). 개인 프로젝트이므로 간단하고 무료 | 백엔드 서버 구축, 로컬 프록시 |
+| 2026-06-23 | 기존 문서 입력을 PDF/Word 업로드로 | 사용자가 가진 파일 그대로 활용. 텍스트 붙여넣기보다 편함 | 텍스트 붙여넣기, .txt만 지원 |
+| 2026-06-23 | 기존 문서를 "문체·톤 참고용"으로만 사용 | 내용 복사가 아닌 본인 글처럼 자연스러운 새 초안 생성 | 내용 기반 재작성 |
 
 ## 세션 로그
 <!-- 최근 5개만 유지. 초과 시 WIKI.md "세션 아카이브"로 이동. 추가만, 수정 금지 -->
 | 날짜 | 한줄요약 | 산출물 |
 |------|---------|--------|
+| 2026-06-23 | 기존 자소서·이력서 업로드(PDF/Word) → 문체 참고 생성 | index.html, api/generate-cover-letter.js, api/generate-resume.js |
 | 2026-06-23 | API 보안 강화 (Vercel Function) | api/claude.js, vercel.json, README.md |
 | 2026-06-22 | index.html 생성 | 프로필·이력서·공고분석 기능 |
