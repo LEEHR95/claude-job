@@ -1,0 +1,10 @@
+{
+  "name": "go-job",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "GO 취업 — AI 이력서 생성 및 채용 공고 분석 (Vercel Functions + Upstage Solar Pro 2)",
+  "scripts": {
+    "dev": "vercel dev"
+  }
+}

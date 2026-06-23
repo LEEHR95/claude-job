@@ -571,6 +571,11 @@
             return text;
         }
 
+        // API(Vercel Function) 호출 가능 환경인지 (file://는 불가 → CORS)
+        function isApiAvailable() {
+            return location.protocol === 'http:' || location.protocol === 'https:';
+        }
+
         // 드래그 앤 드롭 처리
         function onDragOver(event, zone) {
             event.preventDefault();
@@ -614,6 +619,14 @@
                 profile.refResume = text;
                 profile.refResumeName = file.name;
                 localStorage.setItem('profile', JSON.stringify(profile));
+
+                // file:// 환경에서는 API 호출 불가 (CORS) → 텍스트 추출까지만
+                if (!isApiAvailable()) {
+                    statusEl.innerHTML =
+                        `<span style="color:#388e3c;">✅ "${file.name}" 텍스트 추출 완료 (${text.length.toLocaleString()}자)</span>
+                         <div style="margin-top:8px; color:#e65100; font-size:13px;">⚠️ AI 분석은 Vercel dev 또는 배포 환경에서만 가능합니다. 현재는 텍스트 추출만 완료되었습니다.</div>`;
+                    return;
+                }
 
                 // STEP 3: AI 프로필 분석
                 statusEl.innerHTML = `🤖 AI가 프로필을 분석하는 중입니다...`;

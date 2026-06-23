@@ -43,15 +43,27 @@ Vercel 대시보드에서:
 
 ## 로컬 실행 (개발)
 
+API(공고 분석·자소서·이력서·프로필 자동분석)를 로컬에서 테스트하려면 **`vercel dev`** 로 실행해야 합니다.
+
 ```bash
+# 1. Vercel CLI 설치 (최초 1회)
 npm i -g vercel
+
+# 2. 프로젝트 루트에 .env.local 생성
+#    UPSTAGE_API_KEY=up_xxxxxxxx...   (= 양옆 공백·따옴표 없이)
+
+# 3. 로컬 서버 실행
 vercel dev
 ```
 
-`.env.local`:
-```
-UPSTAGE_API_KEY=up_xxxxxxxx...
-```
+→ http://localhost:3000 에서 접속하면 `/api/*` 함수가 동작합니다.
+
+> ⚠️ **`index.html`을 file:// 로 직접 열면 API 호출이 차단됩니다.**
+> file:// 환경에서는 이력서 업로드 시 텍스트 추출까지만 수행하고, AI 분석은
+> "Vercel dev 또는 배포 환경에서만 가능합니다" 안내를 표시합니다.
+> AI 분석을 테스트하려면 반드시 `vercel dev`(localhost) 또는 배포 환경을 사용하세요.
+
+ESM(`import`/`export`)을 쓰므로 `package.json`에 `"type": "module"`이 필요합니다 (이미 포함됨).
 
 ## 파일 구조
 
@@ -60,9 +72,12 @@ UPSTAGE_API_KEY=up_xxxxxxxx...
 ├── index.html                    # 메인 앱
 ├── api/
 │   ├── _upstage.js               # Solar Pro 2 공용 호출 헬퍼 (비공개)
+│   ├── analyze-profile.js        # 이력서 텍스트 → 프로필 자동 추출
 │   ├── analyze-job.js            # 공고 분석 & 지원 전략
 │   ├── generate-cover-letter.js  # 자기소개서 초안
 │   └── generate-resume.js        # 이력서 생성
+├── package.json                  # type: module (ESM) + dev 스크립트
+├── .env.local                    # UPSTAGE_API_KEY (git 제외)
 ├── vercel.json                   # Vercel 배포 설정
 └── README.md
 ```
