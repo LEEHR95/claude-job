@@ -411,15 +411,9 @@
         <div id="settings" class="tab-content">
             <h2>⚙️ 설정</h2>
 
-            <div class="api-key-input">
-                <p>🔑 <strong>API 키 설정</strong></p>
-                <p>Anthropic API 키를 입력하세요. 로컬에만 저장되며 외부로 전송되지 않습니다.</p>
-                <p><a href="https://console.anthropic.com/account/keys" target="_blank" style="color: #0066cc;">API 키 발급 받기</a></p>
-            </div>
-
-            <div class="form-group">
-                <label for="apiKey">Anthropic API 키</label>
-                <input type="password" id="apiKey" placeholder="sk-ant-...">
+            <div class="alert info">
+                <p>✅ <strong>API 키 설정 완료</strong></p>
+                <p>API 키는 Vercel 서버 환경 변수에 안전하게 저장되어 있습니다.</p>
             </div>
 
             <div class="form-group">
@@ -457,7 +451,7 @@
     </div>
 
     <script>
-        const API_BASE = 'https://api.anthropic.com/v1';
+        const API_ENDPOINT = '/api/claude';
 
         // 탭 전환
         function showTab(tabName) {
@@ -546,15 +540,9 @@
         // 이력서 생성
         async function generateResume() {
             const profile = JSON.parse(localStorage.getItem('profile') || '{}');
-            const apiKey = localStorage.getItem('apiKey');
 
             if (!profile.name) {
                 showAlert('resumeAlert', '⚠️ 먼저 프로필을 저장해주세요.', 'warning');
-                return;
-            }
-
-            if (!apiKey) {
-                showAlert('resumeAlert', '⚠️ 먼저 API 키를 설정해주세요.', 'warning');
                 return;
             }
 
@@ -586,12 +574,10 @@ ${additionalInfo ? `추가 정보: ${additionalInfo}` : ''}
             document.getElementById('resumeOutput').innerHTML = '';
 
             try {
-                const response = await fetch(`${API_BASE}/messages`, {
+                const response = await fetch(API_ENDPOINT, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-key': apiKey,
-                        'anthropic-version': '2023-06-01'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         model: model,
@@ -603,7 +589,7 @@ ${additionalInfo ? `추가 정보: ${additionalInfo}` : ''}
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API 오류: ${response.status}`);
+                    throw new Error(`서버 오류: ${response.status}`);
                 }
 
                 const data = await response.json();
@@ -625,7 +611,6 @@ ${additionalInfo ? `추가 정보: ${additionalInfo}` : ''}
         // 공고 분석
         async function analyzePosting() {
             const profile = JSON.parse(localStorage.getItem('profile') || '{}');
-            const apiKey = localStorage.getItem('apiKey');
             const posting = document.getElementById('jobPosting').value;
 
             if (!posting) {
@@ -635,11 +620,6 @@ ${additionalInfo ? `추가 정보: ${additionalInfo}` : ''}
 
             if (!profile.name) {
                 showAlert('analysisAlert', '⚠️ 먼저 프로필을 저장해주세요.', 'warning');
-                return;
-            }
-
-            if (!apiKey) {
-                showAlert('analysisAlert', '⚠️ 먼저 API 키를 설정해주세요.', 'warning');
                 return;
             }
 
@@ -669,12 +649,10 @@ ${posting}
             document.getElementById('analysisOutput').innerHTML = '';
 
             try {
-                const response = await fetch(`${API_BASE}/messages`, {
+                const response = await fetch(API_ENDPOINT, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-key': apiKey,
-                        'anthropic-version': '2023-06-01'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         model: model,
@@ -686,7 +664,7 @@ ${posting}
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API 오류: ${response.status}`);
+                    throw new Error(`서버 오류: ${response.status}`);
                 }
 
                 const data = await response.json();
@@ -707,16 +685,9 @@ ${posting}
 
         // 설정 저장
         function saveSettings() {
-            const apiKey = document.getElementById('apiKey').value;
             const model = document.getElementById('model').value;
             const tone = document.getElementById('tone').value;
 
-            if (!apiKey) {
-                showAlert('settingsOutput', '⚠️ API 키를 입력해주세요.', 'warning');
-                return;
-            }
-
-            localStorage.setItem('apiKey', apiKey);
             localStorage.setItem('model', model);
             localStorage.setItem('tone', tone);
 
@@ -725,22 +696,13 @@ ${posting}
 
         // API 테스트
         async function testApi() {
-            const apiKey = document.getElementById('apiKey').value;
-
-            if (!apiKey) {
-                showAlert('settingsOutput', '⚠️ API 키를 입력해주세요.', 'warning');
-                return;
-            }
-
-            showAlert('settingsOutput', '⏳ API 연결을 테스트 중입니다...', 'info');
+            showAlert('settingsOutput', '⏳ 서버 연결을 테스트 중입니다...', 'info');
 
             try {
-                const response = await fetch(`${API_BASE}/messages`, {
+                const response = await fetch(API_ENDPOINT, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-key': apiKey,
-                        'anthropic-version': '2023-06-01'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         model: 'claude-haiku-4-5',
@@ -753,13 +715,13 @@ ${posting}
 
                 if (!response.ok) {
                     if (response.status === 401) {
-                        throw new Error('API 키가 유효하지 않습니다.');
+                        throw new Error('API 키가 서버에 설정되지 않았습니다.');
                     }
-                    throw new Error(`API 오류: ${response.status}`);
+                    throw new Error(`서버 오류: ${response.status}`);
                 }
 
                 const data = await response.json();
-                showAlert('settingsOutput', `✅ API 연결 성공! (응답: "${data.content[0].text.trim()}")`, 'success');
+                showAlert('settingsOutput', `✅ 서버 연결 성공! (응답: "${data.content[0].text.trim()}")`, 'success');
             } catch (error) {
                 showAlert('settingsOutput', `❌ 연결 실패: ${error.message}`, 'error');
             }
@@ -794,7 +756,6 @@ ${posting}
         function exportData() {
             const data = {
                 profile: localStorage.getItem('profile'),
-                apiKey: localStorage.getItem('apiKey'),
                 model: localStorage.getItem('model'),
                 tone: localStorage.getItem('tone'),
                 exportDate: new Date().toISOString()
@@ -840,11 +801,9 @@ ${posting}
 
         // 설정 로드
         function loadSettings() {
-            const apiKey = localStorage.getItem('apiKey');
             const model = localStorage.getItem('model');
             const tone = localStorage.getItem('tone');
 
-            if (apiKey) document.getElementById('apiKey').value = apiKey;
             if (model) document.getElementById('model').value = model;
             if (tone) document.getElementById('tone').value = tone;
         }
