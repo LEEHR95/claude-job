@@ -7,6 +7,10 @@
 
 ## 일반
 <!-- 프로젝트 전반 지식 -->
+- 서비스 방향(2026-06-23 기획 재정의): 가치 중심을 "프로필 만들기"가 아니라 **"공고 → 맞춤 지원서 반복"**에 둠. 취준생이 공고를 만날 때마다 돌아와 자소서·이력서를 뽑는 재사용 루프가 핵심. 프로필은 1회성 입력이 아니라 프로젝트·역량 카드가 누적되는 자산으로 취급하고, 생성물(공고분석/자소서/이력서)은 지원 이력으로 저장.
+- 프로필 정보구조 목표안: skills는 `[{name, level}]` 배열화, projects는 ProjectCard 배열(`{id,title,period,role,summary,contributions[],outcomes[],techStack[],tags[]}`)로 카드화 → 공고에 맞는 프로젝트만 골라 생성. 부가항목: targetIndustry, tools, education, certificates, awards, links, weaknesses(보완점), `_ai.evidence`(추출 근거). 기존 5필드(position/experience/skills/projects/strengths)는 삭제 없이 상위 구조로 흡수 → 하위호환 마이그레이션 필요.
+- 공고 입력 발전 단계: 텍스트 붙여넣기(현재·유지) → 붙여넣기 후 구조화 추출(회사/직무/필수·우대/마감일 JSON) → URL fetch(V2, JS렌더링·봇차단·로그인 때문에 best-effort+붙여넣기 폴백) → 사이트별 파서(V3). 범용 크롤러는 무리이므로 P3로 미룸.
+- 전체 기획 원본: `~/.claude/plans/claude-codex-jiggly-cray.md` (문제점·정보구조·플로우·P1~P3 로드맵 전문).
 
 ## 기술
 <!-- 기술 관련 학습 -->

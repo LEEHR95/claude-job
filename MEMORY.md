@@ -3,8 +3,8 @@
 ## 마지막 세션
 <!-- /co가 이 섹션 전체를 덮어씁니다 (다음 "##"까지) -->
 - 날짜: 2026-06-23
-- 요약: (1) 프로필 탭 UX 개편 — "업로드→AI분석→검토→수정" 흐름. 시작화면 3선택(이력서/자소서 업로드, 직접입력), 입력필드 초기 숨김, 신규 api/analyze-profile.js(이력서→직무/경력/기술/프로젝트/강점+신뢰도+확인필요 JSON, 파싱 폴백), AI분석 후 검토 폼+신뢰도 배너+확인필요 강조. 업로드는 드래그앤드롭+클릭 공용. 이력서→refResume, 자소서→refCover 자동저장. (2) 로컬 API 테스트 환경: file:// API 차단 가드(isApiAvailable), package.json(type:module, dev 스크립트는 vercel dev 재귀 유발해 제거), vercel dev는 .env.local이 아닌 .env 로드 → .env 사용으로 정리.
-- 다음 할 일: vercel dev 재시작 후 이력서 업로드→AI 분석 실측 검증. 정상 확인되면 Vercel 배포 + 클라우드에 UPSTAGE_API_KEY(Development) 등록. 노출된 API 키 재발급.
+- 요약: 서비스 기획 재정의 세션(코드 변경 없음). 가치 중심을 "프로필 만들기"→**"공고→맞춤 지원서 반복"**으로 이동. 문제 6가지 진단(프로필 단순/AI근거 미표시/프로젝트 비구조화/공고 복붙만/여정 1회성/지원이력 부재), 정보구조 재설계(skills 배열화, projects→ProjectCard 카드화, evidence/weaknesses/교육·자격증·링크 추가, 기존5필드 하위호환 흡수), 공고입력 단계안(붙여넣기→구조화→URL fetch→사이트별 파서), AI분석 UX(요약카드+근거), P1~P3 로드맵 수립. 기획 원본: ~/.claude/plans/claude-codex-jiggly-cray.md. WIKI/ISSUE에 반영 완료.
+- 다음 할 일: P1 착수 — (1)프로필 스키마 확장+기존5필드 마이그레이션 (2)프로젝트 카드 UI(textarea 대체) (3)AI 분석 근거(evidence) 표시+요약 카드 (4)지원 이력 저장. 병행: vercel dev 업로드→AI분석 실측 검증, Vercel 배포+UPSTAGE_API_KEY 등록, 노출 키 재발급.
 
 ## 의사결정 이력
 
@@ -22,6 +22,7 @@
 <!-- 최근 5개만 유지. 초과 시 WIKI.md "세션 아카이브"로 이동. 추가만, 수정 금지 -->
 | 날짜 | 한줄요약 | 산출물 |
 |------|---------|--------|
+| 2026-06-23 | 서비스 기획 재정의: 공고→맞춤지원서 반복 루프 + 정보구조/P1~P3 로드맵 | WIKI.md, ISSUE.md, plans/claude-codex-jiggly-cray.md |
 | 2026-06-23 | 로컬 API 테스트 설정(vercel dev/.env) + dev 재귀 수정 + file:// 가드 | package.json, .env, README.md, index.html |
 | 2026-06-23 | 프로필 탭 UX 개편: 업로드→AI분석→검토 흐름, 드래그앤드롭 | index.html, api/analyze-profile.js |
 | 2026-06-23 | 기존 자소서·이력서 업로드(PDF/Word) → 문체 참고 생성 | index.html, api/generate-cover-letter.js, api/generate-resume.js |

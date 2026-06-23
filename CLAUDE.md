@@ -61,3 +61,4 @@
 | 2026-06-23 | 기존 자소서·이력서 업로드(PDF/Word) 및 문체 참고 생성 | index.html, api/ | 본인 문서 기반 맞춤 초안 |
 | 2026-06-23 | 프로필 탭 UX 개편: 업로드→AI분석→검토 흐름, 드래그앤드롭 | index.html, api/analyze-profile.js | 입력 전 업로드로 사용성 개선 |
 | 2026-06-23 | 로컬 API 테스트 설정 (vercel dev, ESM) | package.json, .env.local, README.md | 배포 전 로컬 검증 가능하게 |
+| 2026-06-23 | 서비스 기획 재정의 + P1~P3 로드맵 (코드 변경 없음) | WIKI.md, ISSUE.md | 1회성 도구→재사용 루프 전환 |
