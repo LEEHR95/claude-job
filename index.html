@@ -245,6 +245,20 @@
             header h1 { font-size: 24px; }
             .tab-content { padding: 20px; }
         }
+        .drop-zone {
+            border: 2px dashed #d0d0d0;
+            border-radius: 12px;
+            padding: 28px 20px;
+            text-align: center;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .drop-zone:hover { border-color: #aaa; }
+        .drop-zone.dragover {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
     </style>
 </head>
 <body>
@@ -264,70 +278,103 @@
 
         <!-- 프로필 탭 -->
         <div id="profile" class="tab-content active">
-            <h2>📋 프로필 관리</h2>
-            <p style="color: #666; margin-bottom: 20px;">지원 전략의 기반이 되는 정보입니다. 모든 데이터는 브라우저에만 저장됩니다.</p>
+            <h2>📋 프로필</h2>
 
-            <div id="profileInfo"></div>
+            <!-- 시작 화면: 업로드 중심 -->
+            <div id="profileStart">
+                <p style="color: #666; margin-bottom: 24px;">문서를 올리면 AI가 프로필을 자동으로 만들어 드립니다. 가진 파일이 없으면 직접 입력할 수도 있어요.</p>
 
-            <div class="form-group">
-                <label for="position">지원 직무</label>
-                <input type="text" id="position" placeholder="예: 프론트엔드 개발자, 데이터 분석가">
+                <!-- 이력서 업로드 -->
+                <div id="resumeDropZone" class="drop-zone"
+                     onclick="document.getElementById('resumeUploadFile').click()"
+                     ondragover="onDragOver(event, this)" ondragleave="onDragLeave(this)"
+                     ondrop="onDrop(event, this, handleResumeUpload)">
+                    <div style="font-size: 36px; margin-bottom: 10px;">📄</div>
+                    <input type="file" id="resumeUploadFile" accept=".pdf,.docx" style="display:none" onchange="handleResumeUpload(this.files[0])">
+                    <button class="button" onclick="event.stopPropagation(); document.getElementById('resumeUploadFile').click()">이력서 업로드</button>
+                    <p style="color: #999; margin-top: 10px; font-size: 13px;">직무 · 경력 · 기술 스택 자동 추출</p>
+                    <p style="color: #bbb; margin-top: 4px; font-size: 12px;">파일을 끌어다 놓거나 클릭 · PDF/docx</p>
+                    <div id="resumeUploadStatus" style="margin-top: 14px; font-size: 14px;"></div>
+                </div>
+
+                <!-- 자소서 업로드 -->
+                <div id="coverDropZone" class="drop-zone"
+                     onclick="document.getElementById('coverUploadFile').click()"
+                     ondragover="onDragOver(event, this)" ondragleave="onDragLeave(this)"
+                     ondrop="onDrop(event, this, handleCoverUpload)">
+                    <div style="font-size: 36px; margin-bottom: 10px;">✍️</div>
+                    <input type="file" id="coverUploadFile" accept=".pdf,.docx" style="display:none" onchange="handleCoverUpload(this.files[0])">
+                    <button class="button secondary" onclick="event.stopPropagation(); document.getElementById('coverUploadFile').click()">자소서 업로드</button>
+                    <p style="color: #999; margin-top: 10px; font-size: 13px;">문체 · 톤 참고용</p>
+                    <p style="color: #bbb; margin-top: 4px; font-size: 12px;">파일을 끌어다 놓거나 클릭 · PDF/docx</p>
+                    <div id="coverUploadStatus" style="margin-top: 14px; font-size: 14px;"></div>
+                </div>
+
+                <div style="text-align: center; margin-top: 8px;">
+                    <button class="button secondary" onclick="showManualEntry()">직접 입력하기</button>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="experience">경력 (년)</label>
-                <input type="number" id="experience" min="0" max="50" placeholder="예: 3">
-            </div>
+            <!-- 검토/수정 폼: 초기 숨김 -->
+            <div id="profileForm" style="display:none;">
+                <div id="aiConfidenceBanner"></div>
+                <div id="profileInfo"></div>
 
-            <div class="form-group">
-                <label for="skills">기술 스택 <span class="optional-tag">쉼표로 구분</span></label>
-                <textarea id="skills" placeholder="예: Python, React, SQL, AWS"></textarea>
-            </div>
+                <div class="form-group" id="fg-position">
+                    <label for="position">지원 직무</label>
+                    <input type="text" id="position" placeholder="예: 프론트엔드 개발자, 데이터 분석가">
+                </div>
 
-            <div class="form-group">
-                <label for="projects">프로젝트 경험</label>
-                <textarea id="projects" placeholder="주요 프로젝트와 본인의 역할, 성과를 적어주세요."></textarea>
-            </div>
+                <div class="form-group" id="fg-experience">
+                    <label for="experience">경력 (년)</label>
+                    <input type="number" id="experience" min="0" max="50" placeholder="예: 3">
+                </div>
 
-            <div class="form-group">
-                <label for="strengths">강점</label>
-                <textarea id="strengths" placeholder="직무와 관련된 본인의 강점을 적어주세요."></textarea>
-            </div>
+                <div class="form-group" id="fg-skills">
+                    <label for="skills">기술 스택 <span class="optional-tag">쉼표로 구분</span></label>
+                    <textarea id="skills" placeholder="예: Python, React, SQL, AWS"></textarea>
+                </div>
 
-            <h3 style="margin: 30px 0 15px; color: #666; font-size: 15px;">📎 기존 문서 <span class="optional-tag">선택 · 문체/톤 참고용</span></h3>
-            <p style="color: #666; margin-bottom: 15px; font-size: 13px;">가지고 있는 자기소개서·이력서를 올리면, 생성 시 그 문체와 톤을 참고합니다. PDF · Word(docx) 지원.</p>
+                <div class="form-group" id="fg-projects">
+                    <label for="projects">프로젝트 경험</label>
+                    <textarea id="projects" placeholder="주요 프로젝트와 본인의 역할, 성과를 적어주세요."></textarea>
+                </div>
 
-            <div class="form-group">
-                <label>기존 자기소개서</label>
-                <input type="file" id="refCoverFile" accept=".pdf,.docx" onchange="handleDocUpload(event, 'refCover')">
-                <div id="refCoverStatus" style="margin-top: 8px; font-size: 13px; color: #666;"></div>
-            </div>
+                <div class="form-group" id="fg-strengths">
+                    <label for="strengths">강점</label>
+                    <textarea id="strengths" placeholder="직무와 관련된 본인의 강점을 적어주세요."></textarea>
+                </div>
 
-            <div class="form-group">
-                <label>기존 이력서</label>
-                <input type="file" id="refResumeFile" accept=".pdf,.docx" onchange="handleDocUpload(event, 'refResume')">
+                <h3 style="margin: 30px 0 15px; color: #666; font-size: 15px;">📎 기존 자기소개서 <span class="optional-tag">선택 · 문체/톤 참고용</span></h3>
+                <p style="color: #666; margin-bottom: 15px; font-size: 13px;">가지고 있는 자기소개서를 올리면, 생성 시 그 문체와 톤을 참고합니다. PDF · Word(docx) 지원.</p>
+
+                <div class="form-group">
+                    <label>기존 자기소개서</label>
+                    <input type="file" id="refCoverFile" accept=".pdf,.docx" onchange="handleDocUpload(event, 'refCover')">
+                    <div id="refCoverStatus" style="margin-top: 8px; font-size: 13px; color: #666;"></div>
+                </div>
                 <div id="refResumeStatus" style="margin-top: 8px; font-size: 13px; color: #666;"></div>
-            </div>
 
-            <h3 style="margin: 30px 0 15px; color: #666; font-size: 15px;">선택 정보</h3>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="name">이름 <span class="optional-tag">선택</span></label>
-                    <input type="text" id="name" placeholder="예: 김철수">
+                <h3 style="margin: 30px 0 15px; color: #666; font-size: 15px;">선택 정보</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name">이름 <span class="optional-tag">선택</span></label>
+                        <input type="text" id="name" placeholder="예: 김철수">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">이메일 <span class="optional-tag">선택</span></label>
+                        <input type="email" id="email" placeholder="you@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">전화번호 <span class="optional-tag">선택</span></label>
+                        <input type="tel" id="phone" placeholder="010-1234-5678">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="email">이메일 <span class="optional-tag">선택</span></label>
-                    <input type="email" id="email" placeholder="you@example.com">
-                </div>
-                <div class="form-group">
-                    <label for="phone">전화번호 <span class="optional-tag">선택</span></label>
-                    <input type="tel" id="phone" placeholder="010-1234-5678">
-                </div>
-            </div>
 
-            <div class="button-group">
-                <button class="button" onclick="saveProfile()">💾 프로필 저장</button>
-                <button class="button secondary" onclick="clearProfile()">🗑️ 초기화</button>
+                <div class="button-group">
+                    <button class="button" onclick="saveProfile()">💾 프로필 저장</button>
+                    <button class="button secondary" onclick="clearProfile()">🗑️ 초기화</button>
+                </div>
             </div>
         </div>
 
@@ -524,6 +571,161 @@
             return text;
         }
 
+        // 드래그 앤 드롭 처리
+        function onDragOver(event, zone) {
+            event.preventDefault();
+            zone.classList.add('dragover');
+        }
+        function onDragLeave(zone) {
+            zone.classList.remove('dragover');
+        }
+        function onDrop(event, zone, handler) {
+            event.preventDefault();
+            zone.classList.remove('dragover');
+            const file = event.dataTransfer.files[0];
+            if (file) handler(file);
+        }
+
+        // STEP 1~4: 이력서 업로드 → 텍스트 추출 → AI 프로필 분석 → 검토
+        async function handleResumeUpload(file) {
+            if (!file) return;
+
+            const statusEl = document.getElementById('resumeUploadStatus');
+            const ext = file.name.split('.').pop().toLowerCase();
+
+            try {
+                // STEP 2: 텍스트 추출
+                statusEl.innerHTML = `⏳ "${file.name}" 텍스트 추출 중...`;
+                let text = '';
+                const buffer = await file.arrayBuffer();
+                if (ext === 'pdf') {
+                    text = await extractPdfText(buffer);
+                } else if (ext === 'docx') {
+                    const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+                    text = result.value;
+                } else {
+                    throw new Error('PDF 또는 Word(docx) 파일만 지원합니다.');
+                }
+                text = text.trim();
+                if (!text) throw new Error('파일에서 텍스트를 찾지 못했습니다.');
+
+                // 업로드한 이력서는 문체 참고용으로도 보존
+                const profile = getProfile();
+                profile.refResume = text;
+                profile.refResumeName = file.name;
+                localStorage.setItem('profile', JSON.stringify(profile));
+
+                // STEP 3: AI 프로필 분석
+                statusEl.innerHTML = `🤖 AI가 프로필을 분석하는 중입니다...`;
+                const response = await fetch('/api/analyze-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ resumeText: text }),
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || `서버 오류: ${response.status}`);
+
+                // STEP 4: 검토 화면으로 전환
+                statusEl.innerHTML = '';
+                showReviewForm(data);
+            } catch (error) {
+                statusEl.innerHTML = `<span style="color:#d32f2f;">❌ ${error.message}</span>`;
+            }
+        }
+
+        // 시작 화면: 자소서 업로드 (문체 참고용 → refCover 저장)
+        async function handleCoverUpload(file) {
+            if (!file) return;
+
+            const statusEl = document.getElementById('coverUploadStatus');
+            const ext = file.name.split('.').pop().toLowerCase();
+
+            try {
+                statusEl.innerHTML = `⏳ "${file.name}" 텍스트 추출 중...`;
+                let text = '';
+                const buffer = await file.arrayBuffer();
+                if (ext === 'pdf') {
+                    text = await extractPdfText(buffer);
+                } else if (ext === 'docx') {
+                    const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+                    text = result.value;
+                } else {
+                    throw new Error('PDF 또는 Word(docx) 파일만 지원합니다.');
+                }
+                text = text.trim();
+                if (!text) throw new Error('파일에서 텍스트를 찾지 못했습니다.');
+
+                const profile = getProfile();
+                profile.refCover = text;
+                profile.refCoverName = file.name;
+                localStorage.setItem('profile', JSON.stringify(profile));
+
+                statusEl.innerHTML = `<span style="color:#388e3c;">✅ ${file.name} 저장됨 (문체 참고용, ${text.length.toLocaleString()}자)</span>`;
+            } catch (error) {
+                statusEl.innerHTML = `<span style="color:#d32f2f;">❌ ${error.message}</span>`;
+            }
+        }
+
+        // 직접 입력하기: 빈 검토 폼 표시
+        function showManualEntry() {
+            document.getElementById('profileStart').style.display = 'none';
+            document.getElementById('profileForm').style.display = 'block';
+            document.getElementById('aiConfidenceBanner').innerHTML = '';
+            clearUncertainHighlights();
+            fillProfileForm();
+            displayProfile();
+            displayDocStatus();
+        }
+
+        // AI 분석 결과로 검토 폼 채우기 + 신뢰도 배너 표시
+        function showReviewForm(analysis) {
+            const profile = getProfile();
+            ['position', 'experience', 'skills', 'projects', 'strengths'].forEach(id => {
+                if (analysis[id] !== undefined) profile[id] = analysis[id];
+            });
+            localStorage.setItem('profile', JSON.stringify(profile));
+
+            document.getElementById('profileStart').style.display = 'none';
+            document.getElementById('profileForm').style.display = 'block';
+            fillProfileForm();
+            displayDocStatus();
+
+            // 확인 필요 항목 강조
+            clearUncertainHighlights();
+            const labels = {
+                position: '지원 직무', experience: '경력', skills: '기술 스택',
+                projects: '프로젝트 경험', strengths: '강점',
+            };
+            const uncertain = Array.isArray(analysis.uncertain) ? analysis.uncertain : [];
+            uncertain.forEach(key => {
+                const fg = document.getElementById('fg-' + key);
+                if (fg) {
+                    fg.style.borderLeft = '3px solid #f9a825';
+                    fg.style.paddingLeft = '12px';
+                }
+            });
+
+            const conf = Number.isInteger(analysis.confidence) ? analysis.confidence : 70;
+            const uncertainList = uncertain.length
+                ? `<div style="margin-top:8px; font-size:13px;">⚠️ 확인이 필요한 항목: <strong>${uncertain.map(k => labels[k] || k).join(', ')}</strong></div>`
+                : '';
+
+            document.getElementById('aiConfidenceBanner').innerHTML = `
+                <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:10px; padding:14px 16px; margin-bottom:18px;">
+                    <div style="font-weight:600; color:#2e7d32;">✅ AI 분석 완료 · 신뢰도 ${conf}%</div>
+                    <div style="margin-top:6px; font-size:13px; color:#555;">AI가 이력서에서 추출한 정보입니다. 틀린 부분을 수정한 뒤 저장해 주세요.</div>
+                    ${uncertainList}
+                </div>`;
+        }
+
+        // 확인 필요 강조 초기화
+        function clearUncertainHighlights() {
+            ['position', 'experience', 'skills', 'projects', 'strengths'].forEach(key => {
+                const fg = document.getElementById('fg-' + key);
+                if (fg) { fg.style.borderLeft = ''; fg.style.paddingLeft = ''; }
+            });
+        }
+
         // 업로드한 문서 상태 표시
         function displayDocStatus() {
             const p = getProfile();
@@ -595,8 +797,18 @@
                 });
                 localStorage.removeItem('profile');
                 document.getElementById('profileInfo').innerHTML = '';
+                document.getElementById('aiConfidenceBanner').innerHTML = '';
+                clearUncertainHighlights();
                 displayDocStatus();
-                showAlert('profileInfo', '✅ 프로필이 초기화되었습니다.', 'success');
+                ['resumeUploadFile', 'coverUploadFile'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+                document.getElementById('resumeUploadStatus').innerHTML = '';
+                document.getElementById('coverUploadStatus').innerHTML = '';
+                // 업로드 중심 시작 화면으로 복귀
+                document.getElementById('profileForm').style.display = 'none';
+                document.getElementById('profileStart').style.display = 'block';
             }
         }
 
@@ -740,9 +952,7 @@
                     try {
                         const data = JSON.parse(event.target.result);
                         if (data.profile) localStorage.setItem('profile', data.profile);
-                        fillProfileForm();
-                        displayProfile();
-                        displayDocStatus();
+                        showManualEntry();
                         showAlert('settingsOutput', '✅ 데이터를 불러왔습니다.', 'success');
                     } catch (error) {
                         showAlert('settingsOutput', '❌ 파일 형식이 잘못되었습니다.', 'error');
@@ -763,9 +973,15 @@
 
         // 페이지 로드
         window.addEventListener('load', () => {
-            fillProfileForm();
-            displayProfile();
-            displayDocStatus();
+            const p = getProfile();
+            if (p.position) {
+                // 이미 프로필이 있는 사용자 → 바로 검토/수정 폼
+                showManualEntry();
+            } else {
+                // 신규 사용자 → 업로드 중심 시작 화면
+                document.getElementById('profileStart').style.display = 'block';
+                document.getElementById('profileForm').style.display = 'none';
+            }
         });
     </script>
 </body>
