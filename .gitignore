@@ -7,3 +7,4 @@ node_modules/
 credentials*.json
 service-account*.json
 .omc/
+.vercel

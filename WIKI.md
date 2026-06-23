@@ -15,6 +15,7 @@
 - 생성 프롬프트: 기존 문서는 `"""..."""` 블록으로 감싸 "복사 금지, 문체·톤만 참고" 지시와 함께 전달.
 - 프로필 자동 추출: 이력서 텍스트 → `/api/analyze-profile`이 position/experience/skills/projects/strengths + confidence(신뢰도) + uncertain(확인필요 키 배열)을 JSON으로 반환. 모델이 코드펜스/잡설을 붙일 수 있어 서버에서 코드펜스 제거 후 첫 `{`~마지막 `}` 범위만 JSON.parse, 실패 시 502+안내 메시지로 폴백. uncertain은 5개 유효키로 필터.
 - 프로필 탭 UX: 시작화면은 업로드 중심(이력서/자소서/직접입력 3선택), 입력필드는 `#profileForm`에 숨겨두고 AI분석·직접입력 시에만 표시. 업로드 박스는 `.drop-zone` 클래스로 드래그앤드롭+클릭 공용, onchange/ondrop 모두 `handleResumeUpload(file)`/`handleCoverUpload(file)`(파일 인자) 호출. 이력서→refResume, 자소서→refCover로 문체참고 자동저장.
+- 로컬 실행: `vercel dev`(localhost:3000)에서 index.html + /api 함수 동시 동작. **env는 `.env` 로드**(프레임워크 없는 정적+함수 구조라 `.env.local` 아님). `package.json`에 `dev: vercel dev` 스크립트를 두면 vercel dev가 자기 자신을 재호출해 무한 재귀 → dev 스크립트 두지 말 것. `.env`/`.env.local`/`.vercel`은 .gitignore 처리. file://로 열면 isApiAvailable()(http/https만 true)이 API 호출 차단.
 
 ## 워크플로우
 <!-- 작업 방식 관련 -->
