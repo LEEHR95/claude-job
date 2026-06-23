@@ -21,6 +21,12 @@
 - 프로필 탭 UX: 시작화면은 업로드 중심(이력서/자소서/직접입력 3선택), 입력필드는 `#profileForm`에 숨겨두고 AI분석·직접입력 시에만 표시. 업로드 박스는 `.drop-zone` 클래스로 드래그앤드롭+클릭 공용, onchange/ondrop 모두 `handleResumeUpload(file)`/`handleCoverUpload(file)`(파일 인자) 호출. 이력서→refResume, 자소서→refCover로 문체참고 자동저장.
 - 로컬 실행: `vercel dev`(localhost:3000)에서 index.html + /api 함수 동시 동작. **env는 `.env` 로드**(프레임워크 없는 정적+함수 구조라 `.env.local` 아님). `package.json`에 `dev: vercel dev` 스크립트를 두면 vercel dev가 자기 자신을 재호출해 무한 재귀 → dev 스크립트 두지 말 것. `.env`/`.env.local`/`.vercel`은 .gitignore 처리. file://로 열면 isApiAvailable()(http/https만 true)이 API 호출 차단.
 
+- 저장 모델(goData): localStorage['goData'] = `{ activeProfileId, profiles:[...] }`. 각 profile은 직무 단위 슬롯(id, label=직무명 + 기존 필드들). 구버전 단일 'profile'은 loadData()가 첫 진입 시 자동 마이그레이션(profiles[0]로 흡수). getProfile()=활성 직무 반환(하위코드 호환), saveActiveProfile(obj)=활성 슬롯에 병합저장(id/label 보존). 직무 전환=switchProfile, 추가=addProfile, 삭제/이름변경 제공. 내보내기/가져오기는 goData 기준(구버전 profile 키도 호환 임포트).
+- 프로젝트 카드: profile.projectCards[] = `{id,title,period,role,summary,contributions[],outcomes[],techStack[],tags[]}`. 화면은 카드 CRUD(projectEditor 인라인 폼). profile.projects(텍스트)는 cardsToText()로 카드에서 동기화 → api/_upstage.js profileBlock이 그대로 사용(서버 무수정). AI 분석(analyze-profile)이 projectCards[]도 추출→기존 카드 없을 때만 자동 채움(sanitizeCards로 방어).
+- 화면 상태 3단계: profileStart(업로드 시작) / profileForm(수정 폼) / profileView(읽기전용 보기). 저장하면 보기화면으로 전환, 새로고침도 보기화면. 보기의 "수정"→폼, 폼의 "취소"→보기.
+- 공고 입력 3경로: ① URL(api/fetch-job.js: 서버 fetch+HTML→텍스트, 12s 타임아웃, 봇차단/동적로딩은 폴백 안내) ② 이미지 OCR(api/ocr-job.js: Upstage Document OCR `POST /v1/document-digitization`, multipart model=ocr+document, 응답 data.text. 클라가 base64 JSON 전송, 장당 4MB 가드, config bodyParser 6mb) ③ 붙여넣기. **OCR 후 LLM 정리 단계는 쓰지 말 것** — 숫자·고유명사를 변조함(경력12년→1~2년, Figma→Wireframe 실제 발생).
+- 자소서/이력서 앙상블: api/_upstage.js runEnsemble({angles, draftPrompt, mergePrompt}) — 관점 다른 초안 Promise.all 병렬 생성 후 편집자 패스로 병합. 반환 `{drafts:[{label,text}], merged}`. stripMarkdown()으로 **·##·//·불릿 제거(지원서 바로 붙여쓰기). 프런트는 완성본+초안3개(접기) 표시, generateEnsemble()이 localStorage['genCache']에 입력 해시로 결과 캐시(최근20개), "다시 생성"=force. 모델은 solar-pro2 유지.
+
 ## 워크플로우
 <!-- 작업 방식 관련 -->
 
@@ -29,3 +35,7 @@
 
 ## 세션 아카이브
 <!-- MEMORY.md에서 5개 초과한 세션 로그 보관 -->
+| 날짜 | 한줄요약 | 산출물 |
+|------|---------|--------|
+| 2026-06-23 | API 보안 강화 (Vercel Function) | api/claude.js, vercel.json, README.md |
+| 2026-06-22 | index.html 생성 | 프로필·이력서·공고분석 기능 |

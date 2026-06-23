@@ -62,3 +62,7 @@
 | 2026-06-23 | 프로필 탭 UX 개편: 업로드→AI분석→검토 흐름, 드래그앤드롭 | index.html, api/analyze-profile.js | 입력 전 업로드로 사용성 개선 |
 | 2026-06-23 | 로컬 API 테스트 설정 (vercel dev, ESM) | package.json, .env.local, README.md | 배포 전 로컬 검증 가능하게 |
 | 2026-06-23 | 서비스 기획 재정의 + P1~P3 로드맵 (코드 변경 없음) | WIKI.md, ISSUE.md | 1회성 도구→재사용 루프 전환 |
+| 2026-06-23 | P1 구현: 직무별 프로필(goData)·프로젝트 카드·AI 근거·AI→카드 추출 + 보기화면 UX | index.html, api/analyze-profile.js | 정보구조 재설계 실행 |
+| 2026-06-23 | 디자인: 이모지 제거 + 배경 미색 | index.html | 사용자 요청(깔끔한 톤) |
+| 2026-06-23 | 공고 입력 확장: URL fetch + 이미지 OCR(Upstage) | api/fetch-job.js, api/ocr-job.js | 크롤링 불가·이미지 공고 대응 |
+| 2026-06-23 | 자소서/이력서 앙상블(3초안 병합)+마크다운 제거+결과 캐시 | api/generate-*.js, api/_upstage.js, index.html | 생성 품질 안정화 |

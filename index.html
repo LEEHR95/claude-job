@@ -13,7 +13,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #faf7f0;
             min-height: 100vh;
             padding: 20px;
         }
@@ -259,26 +259,70 @@
             border-color: #667eea;
             background: #f0f2ff;
         }
+        /* 직무별 프로필 전환 바 */
+        .profile-switcher { margin-bottom: 20px; }
+        .profile-switcher-row {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+        }
+        .profile-switcher-label {
+            font-size: 13px; color: #888; margin-right: 4px;
+        }
+        .prof-chip {
+            border: 1px solid #d0d0d0; background: #fff; color: #555;
+            padding: 6px 14px; border-radius: 20px; font-size: 13px;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .prof-chip:hover { border-color: #667eea; color: #667eea; }
+        .prof-chip.active {
+            background: #667eea; border-color: #667eea; color: #fff; font-weight: 600;
+        }
+        .prof-chip.add { border-style: dashed; color: #888; }
+        .profile-switcher-actions { margin-top: 8px; }
+        .button.tiny { padding: 4px 10px; font-size: 12px; }
+        /* 프로젝트 카드 */
+        .project-card {
+            border: 1px solid #e0e0e0; border-radius: 10px;
+            padding: 14px 16px; margin-bottom: 10px; background: #fafafa;
+        }
+        .project-card-head {
+            display: flex; justify-content: space-between; align-items: center; gap: 8px;
+        }
+        .project-card-meta { color: #888; font-size: 13px; margin-top: 4px; }
+        .project-card-sum { margin-top: 8px; font-size: 14px; color: #444; }
+        .project-editor-box {
+            border: 1px dashed #c5cae9; border-radius: 10px;
+            padding: 16px; margin: 10px 0; background: #f7f8ff;
+        }
+        /* AI 추출 근거 */
+        .evidence-note {
+            font-size: 12px; color: #6a6a6a; margin-top: 6px;
+            background: #f4f6fb; border-left: 3px solid #aab4e8;
+            border-radius: 0 6px 6px 0; padding: 6px 10px;
+        }
+        .evidence-note b { color: #5566c4; font-weight: 600; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🚀 GO 취업</h1>
+            <h1>GO 취업</h1>
             <p>채용공고를 분석하고<br>당신의 경험을 연결해 지원 전략을 제안합니다</p>
         </header>
 
         <div class="tabs">
-            <button class="tab-button active" onclick="showTab('profile', this)">📋 프로필</button>
-            <button class="tab-button" onclick="showTab('analysis', this)">🎯 공고 분석</button>
-            <button class="tab-button" onclick="showTab('cover', this)">✍️ 자기소개서 초안</button>
-            <button class="tab-button" onclick="showTab('resume', this)">📄 이력서 생성</button>
-            <button class="tab-button" onclick="showTab('settings', this)">⚙️ 설정</button>
+            <button class="tab-button active" onclick="showTab('profile', this)">프로필</button>
+            <button class="tab-button" onclick="showTab('analysis', this)">공고 분석</button>
+            <button class="tab-button" onclick="showTab('cover', this)">자기소개서 초안</button>
+            <button class="tab-button" onclick="showTab('resume', this)">이력서 생성</button>
+            <button class="tab-button" onclick="showTab('settings', this)">설정</button>
         </div>
 
         <!-- 프로필 탭 -->
         <div id="profile" class="tab-content active">
-            <h2>📋 프로필</h2>
+            <h2>프로필</h2>
+
+            <!-- 직무별 프로필 전환 바 -->
+            <div id="profileSwitcher" class="profile-switcher"></div>
 
             <!-- 시작 화면: 업로드 중심 -->
             <div id="profileStart">
@@ -289,7 +333,6 @@
                      onclick="document.getElementById('resumeUploadFile').click()"
                      ondragover="onDragOver(event, this)" ondragleave="onDragLeave(this)"
                      ondrop="onDrop(event, this, handleResumeUpload)">
-                    <div style="font-size: 36px; margin-bottom: 10px;">📄</div>
                     <input type="file" id="resumeUploadFile" accept=".pdf,.docx" style="display:none" onchange="handleResumeUpload(this.files[0])">
                     <button class="button" onclick="event.stopPropagation(); document.getElementById('resumeUploadFile').click()">이력서 업로드</button>
                     <p style="color: #999; margin-top: 10px; font-size: 13px;">직무 · 경력 · 기술 스택 자동 추출</p>
@@ -302,7 +345,6 @@
                      onclick="document.getElementById('coverUploadFile').click()"
                      ondragover="onDragOver(event, this)" ondragleave="onDragLeave(this)"
                      ondrop="onDrop(event, this, handleCoverUpload)">
-                    <div style="font-size: 36px; margin-bottom: 10px;">✍️</div>
                     <input type="file" id="coverUploadFile" accept=".pdf,.docx" style="display:none" onchange="handleCoverUpload(this.files[0])">
                     <button class="button secondary" onclick="event.stopPropagation(); document.getElementById('coverUploadFile').click()">자소서 업로드</button>
                     <p style="color: #999; margin-top: 10px; font-size: 13px;">문체 · 톤 참고용</p>
@@ -336,8 +378,10 @@
                 </div>
 
                 <div class="form-group" id="fg-projects">
-                    <label for="projects">프로젝트 경험</label>
-                    <textarea id="projects" placeholder="주요 프로젝트와 본인의 역할, 성과를 적어주세요."></textarea>
+                    <label>프로젝트 경험 <span class="optional-tag">카드로 관리</span></label>
+                    <div id="projectCards"></div>
+                    <div id="projectEditor" style="display:none;"></div>
+                    <button type="button" class="button secondary" onclick="addProjectCard()">+ 프로젝트 추가</button>
                 </div>
 
                 <div class="form-group" id="fg-strengths">
@@ -345,7 +389,7 @@
                     <textarea id="strengths" placeholder="직무와 관련된 본인의 강점을 적어주세요."></textarea>
                 </div>
 
-                <h3 style="margin: 30px 0 15px; color: #666; font-size: 15px;">📎 기존 자기소개서 <span class="optional-tag">선택 · 문체/톤 참고용</span></h3>
+                <h3 style="margin: 30px 0 15px; color: #666; font-size: 15px;">기존 자기소개서 <span class="optional-tag">선택 · 문체/톤 참고용</span></h3>
                 <p style="color: #666; margin-bottom: 15px; font-size: 13px;">가지고 있는 자기소개서를 올리면, 생성 시 그 문체와 톤을 참고합니다. PDF · Word(docx) 지원.</p>
 
                 <div class="form-group">
@@ -372,32 +416,61 @@
                 </div>
 
                 <div class="button-group">
-                    <button class="button" onclick="saveProfile()">💾 프로필 저장</button>
-                    <button class="button secondary" onclick="clearProfile()">🗑️ 초기화</button>
+                    <button class="button" onclick="saveProfile()">프로필 저장</button>
+                    <button class="button secondary" onclick="backToView()">취소</button>
+                    <button class="button secondary" onclick="clearProfile()">초기화</button>
                 </div>
+                <div id="profileSaveStatus" style="margin-top: 12px;"></div>
             </div>
+
+            <!-- 읽기 전용 보기 화면: 저장 후 표시 -->
+            <div id="profileView" style="display:none;"></div>
         </div>
 
         <!-- 공고 분석 탭 -->
         <div id="analysis" class="tab-content">
-            <h2>🎯 채용 공고 분석 & 지원 전략</h2>
+            <h2>채용 공고 분석 & 지원 전략</h2>
             <p style="color: #666; margin-bottom: 20px;">공고를 붙여넣으면 핵심 요구사항, 내 경험과의 연결, 부족한 부분, 면접 질문, 지원 전략을 정리해드립니다.</p>
 
             <div id="analysisAlert"></div>
 
             <div class="form-group">
-                <label for="jobPosting">채용 공고</label>
-                <textarea id="jobPosting" placeholder="채용 공고 전체 내용을 여기에 붙여넣으세요." style="min-height: 150px;"></textarea>
+                <label for="jobUrl">공고 URL <span class="optional-tag">선택 · 사이트 주소로 자동 불러오기</span></label>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <input type="url" id="jobUrl" placeholder="예: https://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=..." style="flex:1; min-width:240px;">
+                    <button class="button secondary" style="white-space:nowrap;" onclick="fetchJobFromUrl()">URL에서 불러오기</button>
+                </div>
+                <div id="jobUrlStatus" style="margin-top:8px; font-size:13px;"></div>
+                <p style="color:#999; font-size:12px; margin-top:6px;">일부 채용 사이트는 로그인·자동화 차단으로 자동 추출이 안 될 수 있어요. 그럴 땐 아래에 직접 붙여넣거나, 이미지로 된 공고는 캡처 이미지를 올리세요.</p>
             </div>
 
-            <button class="button" onclick="analyzePosting()">🔍 분석</button>
+            <div class="form-group">
+                <label>공고 이미지(캡처) <span class="optional-tag">선택 · OCR로 글자 추출</span></label>
+                <div id="jobImageDropZone" class="drop-zone"
+                     onclick="document.getElementById('jobImageFile').click()"
+                     ondragover="onDragOver(event, this)" ondragleave="onDragLeave(this)"
+                     ondrop="onDropImages(event, this)">
+                    <input type="file" id="jobImageFile" accept="image/*" multiple style="display:none" onchange="handleJobImages(this.files)">
+                    <button class="button secondary" onclick="event.stopPropagation(); document.getElementById('jobImageFile').click()">이미지 업로드</button>
+                    <p style="color:#999; margin-top:10px; font-size:13px;">이미지로 된 공고를 캡처해 올리면 글자를 추출합니다 (Upstage OCR · 한국어/영어)</p>
+                    <p style="color:#bbb; margin-top:4px; font-size:12px;">여러 장 가능 · 끌어다 놓기 또는 클릭 · 장당 4MB 이하</p>
+                </div>
+                <div id="jobImageStatus" style="margin-top:8px; font-size:13px;"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="jobPosting">채용 공고</label>
+                <textarea id="jobPosting" placeholder="채용 공고 전체 내용을 여기에 붙여넣으세요. (또는 위에서 URL로 불러오기)" style="min-height: 150px;"></textarea>
+            </div>
+
+            <button class="button" onclick="analyzePosting()">분석</button>
 
             <div id="analysisOutput"></div>
         </div>
 
         <!-- 자기소개서 초안 탭 -->
         <div id="cover" class="tab-content">
-            <h2>✍️ 자기소개서 초안</h2>
+            <h2>자기소개서 초안</h2>
             <p style="color: #666; margin-bottom: 20px;">공고와 프로필을 연결해 지원 동기 · 직무 역량 · 문제 해결 경험 · 입사 후 포부 초안을 생성합니다.</p>
 
             <div id="coverAlert"></div>
@@ -407,14 +480,14 @@
                 <textarea id="coverPosting" placeholder="채용 공고 전체 내용을 여기에 붙여넣으세요." style="min-height: 150px;"></textarea>
             </div>
 
-            <button class="button" onclick="generateCoverLetter()">✨ 자기소개서 초안 생성</button>
+            <button class="button" onclick="generateCoverLetter()">자기소개서 초안 생성</button>
 
             <div id="coverOutput"></div>
         </div>
 
         <!-- 이력서 생성 탭 -->
         <div id="resume" class="tab-content">
-            <h2>📄 이력서 생성</h2>
+            <h2>이력서 생성</h2>
             <p style="color: #666; margin-bottom: 20px;">저장된 프로필을 기반으로 이력서 초안을 생성합니다.</p>
 
             <div id="resumeAlert"></div>
@@ -429,25 +502,25 @@
                 <textarea id="additionalInfo" placeholder="이력서에 강조하고 싶은 사항"></textarea>
             </div>
 
-            <button class="button" onclick="generateResume()">✨ 이력서 생성</button>
+            <button class="button" onclick="generateResume()">이력서 생성</button>
 
             <div id="resumeOutput"></div>
         </div>
 
         <!-- 설정 탭 -->
         <div id="settings" class="tab-content">
-            <h2>⚙️ 설정</h2>
+            <h2>설정</h2>
 
             <div class="alert info">
-                <p>✅ <strong>AI 연결됨</strong> — Solar Pro 2 모델을 사용합니다. API 키는 서버 환경 변수에 안전하게 보관됩니다.</p>
+                <p><strong>AI 연결됨</strong> — Solar Pro 2 모델을 사용합니다. API 키는 서버 환경 변수에 안전하게 보관됩니다.</p>
             </div>
 
-            <h3 style="margin-top: 30px; margin-bottom: 15px;">📊 데이터 관리</h3>
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">데이터 관리</h3>
             <p style="color: #666; margin-bottom: 15px;">프로필 데이터는 이 브라우저에만 저장됩니다. 백업하거나 다른 기기로 옮길 때 사용하세요.</p>
             <div class="button-group">
-                <button class="button secondary" onclick="exportData()">📤 데이터 내보내기</button>
-                <button class="button secondary" onclick="importData()">📥 데이터 가져오기</button>
-                <button class="button secondary" onclick="clearAllData()" style="background: #ffebee; color: #d32f2f;">🗑️ 모든 데이터 삭제</button>
+                <button class="button secondary" onclick="exportData()">데이터 내보내기</button>
+                <button class="button secondary" onclick="importData()">데이터 가져오기</button>
+                <button class="button secondary" onclick="clearAllData()" style="background: #ffebee; color: #d32f2f;">모든 데이터 삭제</button>
             </div>
             <div id="settingsOutput"></div>
         </div>
@@ -476,19 +549,69 @@
             btn.classList.add('active');
         }
 
-        // 프로필 읽기
-        function getProfile() {
-            return JSON.parse(localStorage.getItem('profile') || '{}');
+        // ── 저장 모델: localStorage['goData'] = { activeProfileId, profiles: [...] }
+        //    각 프로필은 직무 단위(서비스기획/UXUI 등). 기존 단일 'profile'은 자동 마이그레이션.
+        function genId() {
+            return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
         }
 
-        // 프로필 저장
+        // 전체 데이터 읽기 (+ 구버전 마이그레이션)
+        function loadData() {
+            let data = null;
+            try { data = JSON.parse(localStorage.getItem('goData') || 'null'); } catch { data = null; }
+            if (!data || !Array.isArray(data.profiles)) {
+                let old = null;
+                try { old = JSON.parse(localStorage.getItem('profile') || 'null'); } catch { old = null; }
+                if (old && Object.keys(old).length) {
+                    old.id = old.id || genId();
+                    old.label = old.label || old.position || '내 프로필';
+                    data = { activeProfileId: old.id, profiles: [old] };
+                } else {
+                    data = { activeProfileId: null, profiles: [] };
+                }
+                localStorage.setItem('goData', JSON.stringify(data));
+            }
+            return data;
+        }
+
+        function saveData(data) {
+            localStorage.setItem('goData', JSON.stringify(data));
+        }
+
+        // 현재 활성 직무 프로필 읽기 (하위 호출부 호환: 기존 getProfile 시그니처 유지)
+        function getProfile() {
+            const data = loadData();
+            return data.profiles.find(p => p.id === data.activeProfileId) || {};
+        }
+
+        // 활성 프로필 슬롯에 객체를 병합 저장 (id/label 보존). 활성 슬롯 없으면 새로 생성.
+        function saveActiveProfile(obj) {
+            const data = loadData();
+            const idx = data.profiles.findIndex(p => p.id === data.activeProfileId);
+            if (idx === -1) {
+                obj.id = obj.id || genId();
+                obj.label = obj.label || obj.position || '내 프로필';
+                data.profiles.push(obj);
+                data.activeProfileId = obj.id;
+            } else {
+                obj.id = data.profiles[idx].id;
+                obj.label = obj.label || data.profiles[idx].label || obj.position || '내 프로필';
+                data.profiles[idx] = obj;
+            }
+            saveData(data);
+            return obj;
+        }
+
+        // 프로필 저장 (폼 → 활성 슬롯)
         function saveProfile() {
             const prev = getProfile();
             const profile = {
                 position: document.getElementById('position').value,
                 experience: document.getElementById('experience').value,
                 skills: document.getElementById('skills').value,
-                projects: document.getElementById('projects').value,
+                // 프로젝트는 카드로 즉시 저장되므로 기존 값 보존 (텍스트는 카드에서 동기화됨)
+                projects: prev.projects || '',
+                projectCards: prev.projectCards || [],
                 strengths: document.getElementById('strengths').value,
                 name: document.getElementById('name').value,
                 email: document.getElementById('email').value,
@@ -498,24 +621,195 @@
                 refCoverName: prev.refCoverName || '',
                 refResume: prev.refResume || '',
                 refResumeName: prev.refResumeName || '',
+                // 직무 식별자 보존
+                id: prev.id,
+                label: prev.label,
             };
 
             if (!profile.position) {
                 alert('지원 직무를 입력해주세요.');
                 return;
             }
+            // 직무명(label)이 비어 있으면 직무로 자동 지정
+            if (!profile.label) profile.label = profile.position;
 
-            localStorage.setItem('profile', JSON.stringify(profile));
-            displayProfile();
-            showAlert('profileInfo', '✅ 프로필이 저장되었습니다.', 'success');
+            saveActiveProfile(profile);
+            renderProfileSwitcher();
+            // 저장 후 읽기 전용 보기 화면으로 전환
+            showProfileView();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showAlert('profileViewStatus', '프로필이 저장되었습니다.', 'success');
+            setTimeout(() => {
+                const s = document.getElementById('profileViewStatus');
+                if (s) s.innerHTML = '';
+            }, 4000);
         }
 
         // 프로필 입력란 채우기
         function fillProfileForm() {
             const p = getProfile();
-            ['position', 'experience', 'skills', 'projects', 'strengths', 'name', 'email', 'phone'].forEach(id => {
-                if (p[id] !== undefined) document.getElementById(id).value = p[id];
+            ['position', 'experience', 'skills', 'strengths', 'name', 'email', 'phone'].forEach(id => {
+                document.getElementById(id).value = (p[id] !== undefined && p[id] !== null) ? p[id] : '';
             });
+            clearEvidence();
+            cancelProjectCard();
+            renderProjectCards();
+        }
+
+        // ── 직무별 프로필 전환 바 ──
+        function renderProfileSwitcher() {
+            const data = loadData();
+            const el = document.getElementById('profileSwitcher');
+            if (!el) return;
+            if (!data.profiles.length) { el.innerHTML = ''; return; }
+
+            const chips = data.profiles.map(p => {
+                const active = p.id === data.activeProfileId;
+                const name = p.label || p.position || '제목없음';
+                return `<button class="prof-chip ${active ? 'active' : ''}" onclick="switchProfile('${p.id}')">${escapeHtml(name)}</button>`;
+            }).join('');
+
+            el.innerHTML = `
+                <div class="profile-switcher-row">
+                    <span class="profile-switcher-label">직무별 프로필</span>
+                    ${chips}
+                    <button class="prof-chip add" onclick="addProfile()">+ 새 직무</button>
+                </div>
+                <div class="profile-switcher-actions">
+                    <button class="button secondary tiny" onclick="renameProfile()">이름 변경</button>
+                    <button class="button secondary tiny" onclick="deleteProfile()">이 직무 삭제</button>
+                </div>`;
+        }
+
+        // 직무 전환
+        function switchProfile(id) {
+            const data = loadData();
+            if (!data.profiles.some(p => p.id === id)) return;
+            data.activeProfileId = id;
+            saveData(data);
+            renderProfileSwitcher();
+            const p = getProfile();
+            // 내용이 있으면 보기 화면, 비어 있으면 업로드 시작 화면
+            if (p.position) {
+                showProfileView();
+            } else {
+                showProfileStart();
+            }
+        }
+
+        // 새 직무 프로필 추가
+        function addProfile() {
+            const name = (prompt('새 직무 이름을 입력하세요. (예: UX/UI 기획)') || '').trim();
+            if (!name) return;
+            const data = loadData();
+            const slot = { id: genId(), label: name, position: '' };
+            data.profiles.push(slot);
+            data.activeProfileId = slot.id;
+            saveData(data);
+            renderProfileSwitcher();
+            // 새 직무는 업로드/직접입력 시작 화면으로
+            showProfileStart();
+        }
+
+        // 활성 직무 이름 변경
+        function renameProfile() {
+            const data = loadData();
+            const cur = data.profiles.find(p => p.id === data.activeProfileId);
+            if (!cur) return;
+            const name = (prompt('직무 이름 변경:', cur.label || cur.position || '') || '').trim();
+            if (!name) return;
+            cur.label = name;
+            saveData(data);
+            renderProfileSwitcher();
+        }
+
+        // 활성 직무 삭제
+        function deleteProfile() {
+            const data = loadData();
+            if (data.profiles.length <= 1) {
+                alert('마지막 직무 프로필은 삭제할 수 없습니다. 내용을 비우려면 초기화를 사용하세요.');
+                return;
+            }
+            const cur = data.profiles.find(p => p.id === data.activeProfileId);
+            if (!cur) return;
+            if (!confirm(`'${cur.label || cur.position || '이 직무'}' 프로필을 삭제할까요?`)) return;
+            data.profiles = data.profiles.filter(p => p.id !== data.activeProfileId);
+            data.activeProfileId = data.profiles[0].id;
+            saveData(data);
+            renderProfileSwitcher();
+            switchProfile(data.activeProfileId);
+        }
+
+        // 업로드 중심 시작 화면 표시
+        function showProfileStart() {
+            document.getElementById('profileForm').style.display = 'none';
+            document.getElementById('profileView').style.display = 'none';
+            document.getElementById('profileStart').style.display = 'block';
+            document.getElementById('resumeUploadStatus').innerHTML = '';
+            document.getElementById('coverUploadStatus').innerHTML = '';
+        }
+
+        // ── 읽기 전용 보기 화면 ──
+        function showProfileView() {
+            const p = getProfile();
+            if (!p.position) { showManualEntry(); return; } // 볼 내용 없으면 수정 폼
+            renderProfileSwitcher();
+            document.getElementById('profileStart').style.display = 'none';
+            document.getElementById('profileForm').style.display = 'none';
+            const view = document.getElementById('profileView');
+            view.style.display = 'block';
+            view.innerHTML = buildProfileViewHtml(p);
+        }
+
+        // 수정 폼/보기 화면에서 "취소" → 내용 있으면 보기, 없으면 업로드 시작
+        function backToView() {
+            if (getProfile().position) showProfileView();
+            else showProfileStart();
+        }
+
+        function buildProfileViewHtml(p) {
+            const skills = (p.skills || '').split(',').map(s => s.trim()).filter(Boolean)
+                .map(s => `<span class="skill-tag">${escapeHtml(s)}</span>`).join('')
+                || '<span style="color:#999;">-</span>';
+
+            const cards = p.projectCards || [];
+            const cardsHtml = cards.length ? cards.map(c => {
+                const tech = (c.techStack || []).map(t => `<span class="skill-tag">${escapeHtml(t)}</span>`).join('');
+                const meta = [c.period, c.role].filter(Boolean).map(escapeHtml).join(' · ');
+                const contrib = (c.contributions || []).map(x => `<li>${escapeHtml(x)}</li>`).join('');
+                const out = (c.outcomes || []).map(x => `<li>${escapeHtml(x)}</li>`).join('');
+                return `<div class="project-card">
+                    <div class="project-card-head"><strong>${escapeHtml(c.title || '(제목없음)')}</strong></div>
+                    ${meta ? `<div class="project-card-meta">${meta}</div>` : ''}
+                    ${c.summary ? `<div class="project-card-sum">${escapeHtml(c.summary)}</div>` : ''}
+                    ${contrib ? `<div style="margin-top:8px;font-size:13px;color:#555;"><b>한 일</b><ul style="margin:4px 0 0 18px;">${contrib}</ul></div>` : ''}
+                    ${out ? `<div style="margin-top:8px;font-size:13px;color:#555;"><b>성과</b><ul style="margin:4px 0 0 18px;">${out}</ul></div>` : ''}
+                    ${tech ? `<div style="margin-top:8px;">${tech}</div>` : ''}
+                </div>`;
+            }).join('') : '<p style="color:#999;font-size:13px;">등록된 프로젝트가 없습니다.</p>';
+
+            const contact = [
+                p.name && `이름: ${escapeHtml(p.name)}`,
+                p.email && `이메일: ${escapeHtml(p.email)}`,
+                p.phone && `전화: ${escapeHtml(p.phone)}`,
+            ].filter(Boolean).join(' · ');
+
+            const h3 = 'margin:26px 0 12px; color:#444; font-size:15px;';
+            return `
+                <div id="profileViewStatus"></div>
+                <div class="profile-info">
+                    <div class="profile-info-item"><span class="profile-info-label">지원 직무</span><span class="profile-info-value">${escapeHtml(p.position || '-')}</span></div>
+                    <div class="profile-info-item"><span class="profile-info-label">경력</span><span class="profile-info-value">${escapeHtml(p.experience || '-')} 년</span></div>
+                </div>
+                <h3 style="${h3}">기술 스택</h3>
+                <div>${skills}</div>
+                <h3 style="${h3}">프로젝트</h3>
+                ${cardsHtml}
+                ${p.strengths ? `<h3 style="${h3}">강점</h3><div class="output-box">${escapeHtml(p.strengths)}</div>` : ''}
+                ${contact ? `<h3 style="${h3}">연락처</h3><div style="color:#555;font-size:14px;">${contact}</div>` : ''}
+                <div class="button-group" style="margin-top:26px;">
+                    <button class="button" onclick="showManualEntry()">수정</button>
+                </div>`;
         }
 
         // 기존 문서 업로드 처리 (PDF/Word → 텍스트 추출 후 프로필에 저장)
@@ -528,7 +822,7 @@
             const ext = file.name.split('.').pop().toLowerCase();
 
             document.getElementById(statusId).innerHTML =
-                `⏳ "${file.name}" 텍스트 추출 중...`;
+                `"${file.name}" 텍스트 추출 중...`;
 
             try {
                 let text = '';
@@ -550,12 +844,12 @@
                 const profile = getProfile();
                 profile[field] = text;
                 profile[nameField] = file.name;
-                localStorage.setItem('profile', JSON.stringify(profile));
+                saveActiveProfile(profile);
 
                 displayDocStatus();
             } catch (error) {
                 document.getElementById(statusId).innerHTML =
-                    `<span style="color:#d32f2f;">❌ ${error.message}</span>`;
+                    `<span style="color:#d32f2f;">${error.message}</span>`;
             }
         }
 
@@ -600,7 +894,7 @@
 
             try {
                 // STEP 2: 텍스트 추출
-                statusEl.innerHTML = `⏳ "${file.name}" 텍스트 추출 중...`;
+                statusEl.innerHTML = `"${file.name}" 텍스트 추출 중...`;
                 let text = '';
                 const buffer = await file.arrayBuffer();
                 if (ext === 'pdf') {
@@ -618,18 +912,18 @@
                 const profile = getProfile();
                 profile.refResume = text;
                 profile.refResumeName = file.name;
-                localStorage.setItem('profile', JSON.stringify(profile));
+                saveActiveProfile(profile);
 
                 // file:// 환경에서는 API 호출 불가 (CORS) → 텍스트 추출까지만
                 if (!isApiAvailable()) {
                     statusEl.innerHTML =
-                        `<span style="color:#388e3c;">✅ "${file.name}" 텍스트 추출 완료 (${text.length.toLocaleString()}자)</span>
-                         <div style="margin-top:8px; color:#e65100; font-size:13px;">⚠️ AI 분석은 Vercel dev 또는 배포 환경에서만 가능합니다. 현재는 텍스트 추출만 완료되었습니다.</div>`;
+                        `<span style="color:#388e3c;">"${file.name}" 텍스트 추출 완료 (${text.length.toLocaleString()}자)</span>
+                         <div style="margin-top:8px; color:#e65100; font-size:13px;">AI 분석은 Vercel dev 또는 배포 환경에서만 가능합니다. 현재는 텍스트 추출만 완료되었습니다.</div>`;
                     return;
                 }
 
                 // STEP 3: AI 프로필 분석
-                statusEl.innerHTML = `🤖 AI가 프로필을 분석하는 중입니다...`;
+                statusEl.innerHTML = `AI가 프로필을 분석하는 중입니다...`;
                 const response = await fetch('/api/analyze-profile', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -642,7 +936,7 @@
                 statusEl.innerHTML = '';
                 showReviewForm(data);
             } catch (error) {
-                statusEl.innerHTML = `<span style="color:#d32f2f;">❌ ${error.message}</span>`;
+                statusEl.innerHTML = `<span style="color:#d32f2f;">${error.message}</span>`;
             }
         }
 
@@ -654,7 +948,7 @@
             const ext = file.name.split('.').pop().toLowerCase();
 
             try {
-                statusEl.innerHTML = `⏳ "${file.name}" 텍스트 추출 중...`;
+                statusEl.innerHTML = `"${file.name}" 텍스트 추출 중...`;
                 let text = '';
                 const buffer = await file.arrayBuffer();
                 if (ext === 'pdf') {
@@ -671,19 +965,30 @@
                 const profile = getProfile();
                 profile.refCover = text;
                 profile.refCoverName = file.name;
-                localStorage.setItem('profile', JSON.stringify(profile));
+                saveActiveProfile(profile);
 
-                statusEl.innerHTML = `<span style="color:#388e3c;">✅ ${file.name} 저장됨 (문체 참고용, ${text.length.toLocaleString()}자)</span>`;
+                statusEl.innerHTML = `<span style="color:#388e3c;">${file.name} 저장됨 (문체 참고용, ${text.length.toLocaleString()}자)</span>`;
             } catch (error) {
-                statusEl.innerHTML = `<span style="color:#d32f2f;">❌ ${error.message}</span>`;
+                statusEl.innerHTML = `<span style="color:#d32f2f;">${error.message}</span>`;
             }
         }
 
         // 직접 입력하기: 빈 검토 폼 표시
         function showManualEntry() {
+            // 활성 슬롯이 없으면(직접입력 첫 진입) 빈 슬롯 생성
+            const data = loadData();
+            if (!data.profiles.length) {
+                const slot = { id: genId(), label: '내 프로필', position: '' };
+                data.profiles.push(slot);
+                data.activeProfileId = slot.id;
+                saveData(data);
+            }
+            renderProfileSwitcher();
             document.getElementById('profileStart').style.display = 'none';
+            document.getElementById('profileView').style.display = 'none';
             document.getElementById('profileForm').style.display = 'block';
             document.getElementById('aiConfidenceBanner').innerHTML = '';
+            document.getElementById('profileSaveStatus').innerHTML = '';
             clearUncertainHighlights();
             fillProfileForm();
             displayProfile();
@@ -693,12 +998,39 @@
         // AI 분석 결과로 검토 폼 채우기 + 신뢰도 배너 표시
         function showReviewForm(analysis) {
             const profile = getProfile();
-            ['position', 'experience', 'skills', 'projects', 'strengths'].forEach(id => {
+            const existingCards = profile.projectCards || [];
+            const aiCards = Array.isArray(analysis.projectCards) ? analysis.projectCards : [];
+
+            // 기본 필드 채우기
+            ['position', 'experience', 'skills', 'strengths'].forEach(id => {
                 if (analysis[id] !== undefined) profile[id] = analysis[id];
             });
-            localStorage.setItem('profile', JSON.stringify(profile));
+
+            // 프로젝트: 기존 카드가 없을 때만 AI 추출 결과로 채움 (사용자가 만든 카드는 보존)
+            let importedCount = 0;
+            if (!existingCards.length && aiCards.length) {
+                profile.projectCards = aiCards.map(c => ({
+                    id: genId(),
+                    title: c.title || '',
+                    period: c.period || '',
+                    role: c.role || '',
+                    summary: c.summary || '',
+                    contributions: Array.isArray(c.contributions) ? c.contributions : [],
+                    outcomes: Array.isArray(c.outcomes) ? c.outcomes : [],
+                    techStack: Array.isArray(c.techStack) ? c.techStack : [],
+                    tags: Array.isArray(c.tags) ? c.tags : [],
+                }));
+                profile.projects = cardsToText(profile.projectCards);
+                importedCount = profile.projectCards.length;
+            } else if (!existingCards.length && analysis.projects !== undefined) {
+                profile.projects = analysis.projects; // 카드를 못 뽑았으면 텍스트 요약 사용
+            }
+
+            saveActiveProfile(profile);
+            renderProfileSwitcher();
 
             document.getElementById('profileStart').style.display = 'none';
+            document.getElementById('profileView').style.display = 'none';
             document.getElementById('profileForm').style.display = 'block';
             fillProfileForm();
             displayDocStatus();
@@ -718,15 +1050,22 @@
                 }
             });
 
+            // AI 추출 근거 표시
+            showEvidence(analysis.evidence);
+
             const conf = Number.isInteger(analysis.confidence) ? analysis.confidence : 70;
             const uncertainList = uncertain.length
-                ? `<div style="margin-top:8px; font-size:13px;">⚠️ 확인이 필요한 항목: <strong>${uncertain.map(k => labels[k] || k).join(', ')}</strong></div>`
+                ? `<div style="margin-top:8px; font-size:13px;">확인이 필요한 항목: <strong>${uncertain.map(k => labels[k] || k).join(', ')}</strong></div>`
+                : '';
+            const cardsNote = importedCount
+                ? `<div style="margin-top:8px; font-size:13px;">프로젝트 <strong>${importedCount}개</strong>를 카드로 정리했습니다. 내용을 확인·수정하세요.</div>`
                 : '';
 
             document.getElementById('aiConfidenceBanner').innerHTML = `
                 <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:10px; padding:14px 16px; margin-bottom:18px;">
-                    <div style="font-weight:600; color:#2e7d32;">✅ AI 분석 완료 · 신뢰도 ${conf}%</div>
+                    <div style="font-weight:600; color:#2e7d32;">AI 분석 완료 · 신뢰도 ${conf}%</div>
                     <div style="margin-top:6px; font-size:13px; color:#555;">AI가 이력서에서 추출한 정보입니다. 틀린 부분을 수정한 뒤 저장해 주세요.</div>
+                    ${cardsNote}
                     ${uncertainList}
                 </div>`;
         }
@@ -739,6 +1078,25 @@
             });
         }
 
+        // AI 추출 근거 표시/초기화
+        function clearEvidence() {
+            document.querySelectorAll('.evidence-note[data-ev]').forEach(el => el.remove());
+        }
+        function showEvidence(evidence) {
+            clearEvidence();
+            if (!evidence || typeof evidence !== 'object') return;
+            ['position', 'experience', 'skills', 'projects', 'strengths'].forEach(key => {
+                const text = evidence[key];
+                const fg = document.getElementById('fg-' + key);
+                if (!text || !fg) return;
+                const note = document.createElement('div');
+                note.className = 'evidence-note';
+                note.setAttribute('data-ev', '1');
+                note.innerHTML = `<b>근거</b> · ${escapeHtml(text)}`;
+                fg.appendChild(note);
+            });
+        }
+
         // 업로드한 문서 상태 표시
         function displayDocStatus() {
             const p = getProfile();
@@ -748,7 +1106,7 @@
                 if (p[field]) {
                     const len = p[field].length;
                     statusEl.innerHTML =
-                        `<span style="color:#388e3c;">✅ ${p[nameField] || '문서'} (${len.toLocaleString()}자)</span>
+                        `<span style="color:#388e3c;">${p[nameField] || '문서'} (${len.toLocaleString()}자)</span>
                          <button class="button secondary" style="padding:4px 10px; font-size:12px; margin-left:8px;" onclick="removeDoc('${field}')">삭제</button>`;
                 } else {
                     statusEl.innerHTML = '';
@@ -761,7 +1119,7 @@
             const profile = getProfile();
             delete profile[field];
             delete profile[field + 'Name'];
-            localStorage.setItem('profile', JSON.stringify(profile));
+            saveActiveProfile(profile);
             const input = document.getElementById(field + 'File');
             if (input) input.value = '';
             displayDocStatus();
@@ -799,16 +1157,150 @@
             `;
         }
 
-        // 프로필 초기화
+        // ── 프로젝트 카드 ──
+        function escapeAttr(s) { return escapeHtml(s || '').replace(/"/g, '&quot;'); }
+        function getCards() { return getProfile().projectCards || []; }
+
+        // 카드 배열 → API/요약용 텍스트
+        function cardsToText(cards) {
+            if (!cards.length) return '';
+            return cards.map(c => {
+                const lines = [];
+                let head = c.title || '(제목없음)';
+                if (c.period) head += ` (${c.period})`;
+                if (c.role) head += ` · ${c.role}`;
+                lines.push('▸ ' + head);
+                if (c.summary) lines.push('  ' + c.summary);
+                (c.contributions || []).forEach(x => lines.push('  - 한 일: ' + x));
+                (c.outcomes || []).forEach(x => lines.push('  - 성과: ' + x));
+                if ((c.techStack || []).length) lines.push('  - 기술: ' + c.techStack.join(', '));
+                return lines.join('\n');
+            }).join('\n\n');
+        }
+
+        // 카드 저장 + projects 텍스트 동기화
+        function persistCards(cards) {
+            const p = getProfile();
+            p.projectCards = cards;
+            p.projects = cardsToText(cards);
+            saveActiveProfile(p);
+        }
+
+        function renderProjectCards() {
+            const wrap = document.getElementById('projectCards');
+            if (!wrap) return;
+            const cards = getCards();
+            if (!cards.length) {
+                wrap.innerHTML = '<p style="color:#999;font-size:13px;margin:6px 0;">아직 등록한 프로젝트가 없습니다. 아래 버튼으로 추가하세요.</p>';
+                return;
+            }
+            wrap.innerHTML = cards.map(c => {
+                const tech = (c.techStack || []).map(t => `<span class="skill-tag">${escapeHtml(t)}</span>`).join('');
+                const meta = [c.period, c.role].filter(Boolean).map(escapeHtml).join(' · ');
+                return `<div class="project-card">
+                    <div class="project-card-head">
+                        <strong>${escapeHtml(c.title || '(제목없음)')}</strong>
+                        <span>
+                            <button class="button secondary tiny" onclick="editProjectCard('${c.id}')">편집</button>
+                            <button class="button secondary tiny" onclick="deleteProjectCard('${c.id}')">삭제</button>
+                        </span>
+                    </div>
+                    ${meta ? `<div class="project-card-meta">${meta}</div>` : ''}
+                    ${c.summary ? `<div class="project-card-sum">${escapeHtml(c.summary)}</div>` : ''}
+                    ${tech ? `<div style="margin-top:8px;">${tech}</div>` : ''}
+                </div>`;
+            }).join('');
+        }
+
+        function projectEditorHtml(c) {
+            c = c || {};
+            return `<div class="project-editor-box">
+                <div class="form-group"><label>프로젝트명</label><input id="pc-title" value="${escapeAttr(c.title)}" placeholder="예: 사내 예약 시스템 개편"></div>
+                <div class="form-row">
+                    <div class="form-group"><label>기간</label><input id="pc-period" value="${escapeAttr(c.period)}" placeholder="예: 2024.01 ~ 2024.06"></div>
+                    <div class="form-group"><label>역할</label><input id="pc-role" value="${escapeAttr(c.role)}" placeholder="예: 서비스 기획 리드"></div>
+                </div>
+                <div class="form-group"><label>한 줄 요약</label><input id="pc-summary" value="${escapeAttr(c.summary)}" placeholder="프로젝트를 한 문장으로"></div>
+                <div class="form-group"><label>한 일 <span class="optional-tag">줄바꿈으로 구분</span></label><textarea id="pc-contrib" placeholder="요구사항 정의\n화면 설계">${escapeHtml((c.contributions || []).join('\n'))}</textarea></div>
+                <div class="form-group"><label>성과 <span class="optional-tag">줄바꿈 구분 · 숫자 우선</span></label><textarea id="pc-outcomes" placeholder="전환율 15% 상승\n처리시간 40% 단축">${escapeHtml((c.outcomes || []).join('\n'))}</textarea></div>
+                <div class="form-group"><label>기술/툴 <span class="optional-tag">쉼표 구분</span></label><input id="pc-tech" value="${escapeAttr((c.techStack || []).join(', '))}" placeholder="Figma, SQL"></div>
+                <div class="form-group"><label>매칭 태그 <span class="optional-tag">쉼표 구분 · 공고 매칭용</span></label><input id="pc-tags" value="${escapeAttr((c.tags || []).join(', '))}" placeholder="서비스기획, 데이터분석"></div>
+                <div class="button-group">
+                    <button class="button" onclick="saveProjectCard()">저장</button>
+                    <button class="button secondary" onclick="cancelProjectCard()">취소</button>
+                </div>
+            </div>`;
+        }
+
+        let _editingCardId = null;
+        function openEditor(c) {
+            const ed = document.getElementById('projectEditor');
+            ed.innerHTML = projectEditorHtml(c);
+            ed.style.display = 'block';
+        }
+        function addProjectCard() { _editingCardId = '__new__'; openEditor({}); }
+        function editProjectCard(id) {
+            const c = getCards().find(x => x.id === id);
+            if (!c) return;
+            _editingCardId = id;
+            openEditor(c);
+        }
+        function cancelProjectCard() {
+            _editingCardId = null;
+            const ed = document.getElementById('projectEditor');
+            if (ed) { ed.style.display = 'none'; ed.innerHTML = ''; }
+        }
+        function linesToArr(id) {
+            return (document.getElementById(id).value || '').split('\n').map(s => s.trim()).filter(Boolean);
+        }
+        function commaToArr(id) {
+            return (document.getElementById(id).value || '').split(',').map(s => s.trim()).filter(Boolean);
+        }
+        function saveProjectCard() {
+            const title = (document.getElementById('pc-title').value || '').trim();
+            if (!title) { alert('프로젝트명을 입력하세요.'); return; }
+            const card = {
+                title,
+                period: (document.getElementById('pc-period').value || '').trim(),
+                role: (document.getElementById('pc-role').value || '').trim(),
+                summary: (document.getElementById('pc-summary').value || '').trim(),
+                contributions: linesToArr('pc-contrib'),
+                outcomes: linesToArr('pc-outcomes'),
+                techStack: commaToArr('pc-tech'),
+                tags: commaToArr('pc-tags'),
+            };
+            const cards = getCards();
+            if (_editingCardId === '__new__') {
+                card.id = genId();
+                cards.push(card);
+            } else {
+                card.id = _editingCardId;
+                const i = cards.findIndex(x => x.id === _editingCardId);
+                if (i >= 0) cards[i] = card; else cards.push(card);
+            }
+            persistCards(cards);
+            cancelProjectCard();
+            renderProjectCards();
+        }
+        function deleteProjectCard(id) {
+            if (!confirm('이 프로젝트를 삭제할까요?')) return;
+            persistCards(getCards().filter(x => x.id !== id));
+            renderProjectCards();
+        }
+
+        // 프로필 초기화 (현재 직무 슬롯의 내용만 비우고 슬롯/직무명은 유지)
         function clearProfile() {
-            if (confirm('프로필을 초기화하시겠습니까?')) {
-                ['position', 'experience', 'skills', 'projects', 'strengths', 'name', 'email', 'phone']
+            if (confirm('현재 직무 프로필의 내용을 초기화하시겠습니까? (직무 칸은 유지됩니다)')) {
+                ['position', 'experience', 'skills', 'strengths', 'name', 'email', 'phone']
                     .forEach(id => { document.getElementById(id).value = ''; });
+                cancelProjectCard();
                 ['refCoverFile', 'refResumeFile'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.value = '';
                 });
-                localStorage.removeItem('profile');
+                const cur = getProfile();
+                saveActiveProfile({ id: cur.id, label: cur.label, position: '' });
+                renderProjectCards();
                 document.getElementById('profileInfo').innerHTML = '';
                 document.getElementById('aiConfidenceBanner').innerHTML = '';
                 clearUncertainHighlights();
@@ -821,6 +1313,7 @@
                 document.getElementById('coverUploadStatus').innerHTML = '';
                 // 업로드 중심 시작 화면으로 복귀
                 document.getElementById('profileForm').style.display = 'none';
+                document.getElementById('profileView').style.display = 'none';
                 document.getElementById('profileStart').style.display = 'block';
             }
         }
@@ -846,12 +1339,118 @@
                 document.getElementById(outputId).innerHTML = `
                     <div class="output-box">${escapeHtml(data.text)}</div>
                     <div style="margin-top: 15px;">
-                        <button class="button secondary" onclick="copyToClipboard('${outputId}')">📋 복사</button>
-                        <button class="button secondary" onclick="downloadText('${filePrefix}_${Date.now()}.txt', document.querySelector('#${outputId} .output-box').innerText)">⬇️ 다운로드</button>
+                        <button class="button secondary" onclick="copyToClipboard('${outputId}')">복사</button>
+                        <button class="button secondary" onclick="downloadText('${filePrefix}_${Date.now()}.txt', document.querySelector('#${outputId} .output-box').innerText)">다운로드</button>
                     </div>
                 `;
             } catch (error) {
-                showAlert(alertId, `❌ 오류: ${error.message}`, 'error');
+                showAlert(alertId, `오류: ${error.message}`, 'error');
+            }
+        }
+
+        // 이미지 드롭(여러 장)
+        function onDropImages(event, zone) {
+            event.preventDefault();
+            zone.classList.remove('dragover');
+            const files = event.dataTransfer.files;
+            if (files && files.length) handleJobImages(files);
+        }
+
+        // 파일 → base64 (data: 접두어 제거)
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const r = new FileReader();
+                r.onload = () => resolve(String(r.result).split(',')[1] || '');
+                r.onerror = () => reject(new Error('이미지를 읽지 못했습니다.'));
+                r.readAsDataURL(file);
+            });
+        }
+
+        // 공고 이미지 → Upstage OCR(서버) → 공고 textarea에 추가
+        async function handleJobImages(fileList) {
+            const files = Array.from(fileList || []).filter(f => f.type.startsWith('image/'));
+            const statusEl = document.getElementById('jobImageStatus');
+            if (!files.length) {
+                statusEl.innerHTML = '<span style="color:#f57c00;">이미지 파일을 올려 주세요.</span>';
+                return;
+            }
+            if (!isApiAvailable()) {
+                statusEl.innerHTML = '<span style="color:#e65100;">이미지 OCR은 vercel dev 또는 배포 환경에서만 가능합니다. 현재는 직접 붙여넣어 주세요.</span>';
+                return;
+            }
+            // 너무 큰 이미지 방지 (서버 본문 한도)
+            const tooBig = files.find(f => f.size > 4 * 1024 * 1024);
+            if (tooBig) {
+                statusEl.innerHTML = `<span style="color:#f57c00;">"${escapeHtml(tooBig.name)}"이 너무 큽니다(4MB 초과). 캡처를 나눠 올리거나 화질을 낮춰 주세요.</span>`;
+                return;
+            }
+
+            try {
+                let ocrText = '';
+                let added = 0;
+                for (let i = 0; i < files.length; i++) {
+                    statusEl.innerHTML = `이미지 ${i + 1}/${files.length} 인식 중... (Upstage OCR)`;
+                    const imageBase64 = await fileToBase64(files[i]);
+                    const resp = await fetch('/api/ocr-job', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ imageBase64, filename: files[i].name, mimeType: files[i].type }),
+                    });
+                    const data = await resp.json();
+                    if (!resp.ok) throw new Error(data.error || `OCR 오류 ${resp.status}`);
+                    const text = (data.text || '').trim();
+                    if (text) {
+                        ocrText += (ocrText ? '\n\n' : '') + text;
+                        added++;
+                    }
+                }
+
+                if (!added) {
+                    statusEl.innerHTML = '<span style="color:#e65100;">글자를 찾지 못했습니다. 더 선명한 캡처로 다시 시도하거나 직접 붙여넣어 주세요.</span>';
+                    return;
+                }
+
+                const ta = document.getElementById('jobPosting');
+                ta.value = (ta.value.trim() ? ta.value.trim() + '\n\n' : '') + ocrText;
+                statusEl.innerHTML = `<span style="color:#388e3c;">이미지 ${added}장에서 글자를 추출했습니다. 아래 내용을 확인한 뒤 분석을 누르세요.</span>`;
+            } catch (error) {
+                statusEl.innerHTML = `<span style="color:#d32f2f;">${escapeHtml(error.message)}</span>`;
+            }
+        }
+
+        // 공고 URL → 본문 자동 추출 (서버 fetch, 실패 시 붙여넣기 안내)
+        async function fetchJobFromUrl() {
+            const url = document.getElementById('jobUrl').value.trim();
+            const statusEl = document.getElementById('jobUrlStatus');
+            if (!url) {
+                statusEl.innerHTML = '<span style="color:#f57c00;">URL을 입력해 주세요.</span>';
+                return;
+            }
+            if (!/^https?:\/\//i.test(url)) {
+                statusEl.innerHTML = '<span style="color:#f57c00;">http(s):// 로 시작하는 주소를 입력해 주세요.</span>';
+                return;
+            }
+            if (!isApiAvailable()) {
+                statusEl.innerHTML = '<span style="color:#e65100;">URL 불러오기는 vercel dev 또는 배포 환경에서만 가능합니다. 현재는 직접 붙여넣어 주세요.</span>';
+                return;
+            }
+            statusEl.innerHTML = '페이지를 불러오는 중...';
+            try {
+                const resp = await fetch('/api/fetch-job', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url }),
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || `오류 ${resp.status}`);
+
+                const ta = document.getElementById('jobPosting');
+                ta.value = (data.title ? data.title + '\n\n' : '') + (data.text || '');
+                statusEl.innerHTML = data.warning
+                    ? `<span style="color:#e65100;">${escapeHtml(data.warning)}</span>`
+                    : '<span style="color:#388e3c;">불러왔습니다. 아래 내용을 확인한 뒤 분석을 누르세요.</span>';
+            } catch (error) {
+                statusEl.innerHTML = `<span style="color:#d32f2f;">${escapeHtml(error.message)}</span>`;
             }
         }
 
@@ -860,45 +1459,47 @@
             const profile = getProfile();
             const jobPosting = document.getElementById('jobPosting').value;
 
-            if (!jobPosting.trim()) return showAlert('analysisAlert', '⚠️ 채용 공고를 입력해주세요.', 'warning');
-            if (!profile.position) return showAlert('analysisAlert', '⚠️ 먼저 프로필을 저장해주세요.', 'warning');
+            if (!jobPosting.trim()) return showAlert('analysisAlert', '채용 공고를 입력해주세요.', 'warning');
+            if (!profile.position) return showAlert('analysisAlert', '먼저 프로필을 저장해주세요.', 'warning');
 
             await callAndRender({
                 endpoint: ENDPOINTS.analysis,
                 payload: { profile, jobPosting },
                 alertId: 'analysisAlert',
                 outputId: 'analysisOutput',
-                loadingMsg: '⏳ 공고를 분석하고 지원 전략을 정리 중입니다...',
-                successMsg: '✅ 분석이 완료되었습니다.',
+                loadingMsg: '공고를 분석하고 지원 전략을 정리 중입니다...',
+                successMsg: '분석이 완료되었습니다.',
                 filePrefix: 'analysis',
             });
         }
 
         // 자기소개서 초안
-        async function generateCoverLetter() {
+        async function generateCoverLetter(force) {
             const profile = getProfile();
             const jobPosting = document.getElementById('coverPosting').value;
 
-            if (!jobPosting.trim()) return showAlert('coverAlert', '⚠️ 채용 공고를 입력해주세요.', 'warning');
-            if (!profile.position) return showAlert('coverAlert', '⚠️ 먼저 프로필을 저장해주세요.', 'warning');
+            if (!jobPosting.trim()) return showAlert('coverAlert', '채용 공고를 입력해주세요.', 'warning');
+            if (!profile.position) return showAlert('coverAlert', '먼저 프로필을 저장해주세요.', 'warning');
 
-            await callAndRender({
+            await generateEnsemble({
                 endpoint: ENDPOINTS.cover,
                 payload: { profile, jobPosting },
                 alertId: 'coverAlert',
                 outputId: 'coverOutput',
-                loadingMsg: '⏳ 자기소개서 초안을 작성 중입니다...',
-                successMsg: '✅ 자기소개서 초안이 생성되었습니다.',
+                loadingMsg: '관점이 다른 초안 3개를 만들고 병합하는 중입니다... (조금 걸려요)',
                 filePrefix: 'cover_letter',
+                cacheTag: 'cover',
+                regen: 'generateCoverLetter',
+                force: !!force,
             });
         }
 
         // 이력서 생성
-        async function generateResume() {
+        async function generateResume(force) {
             const profile = getProfile();
-            if (!profile.position) return showAlert('resumeAlert', '⚠️ 먼저 프로필을 저장해주세요.', 'warning');
+            if (!profile.position) return showAlert('resumeAlert', '먼저 프로필을 저장해주세요.', 'warning');
 
-            await callAndRender({
+            await generateEnsemble({
                 endpoint: ENDPOINTS.resume,
                 payload: {
                     profile,
@@ -907,10 +1508,91 @@
                 },
                 alertId: 'resumeAlert',
                 outputId: 'resumeOutput',
-                loadingMsg: '⏳ 이력서를 생성 중입니다...',
-                successMsg: '✅ 이력서가 생성되었습니다.',
+                loadingMsg: '관점이 다른 초안 3개를 만들고 병합하는 중입니다... (조금 걸려요)',
                 filePrefix: 'resume',
+                cacheTag: 'resume',
+                regen: 'generateResume',
+                force: !!force,
             });
+        }
+
+        // ── 앙상블(3초안 병합) 결과 캐시: 같은 입력이면 재호출 없이 즉시 표시 ──
+        function genCacheKey(tag, payload) {
+            const s = tag + '|' + JSON.stringify(payload);
+            let h = 0;
+            for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0;
+            return tag + '_' + (h >>> 0).toString(36);
+        }
+        function getGenCache(key) {
+            try { return (JSON.parse(localStorage.getItem('genCache') || '{}'))[key] || null; } catch { return null; }
+        }
+        function setGenCache(key, val) {
+            try {
+                const c = JSON.parse(localStorage.getItem('genCache') || '{}');
+                c[key] = { ...val, ts: Date.now() };
+                const keep = Object.keys(c).sort((a, b) => c[b].ts - c[a].ts).slice(0, 20);
+                const trimmed = {};
+                keep.forEach(k => { trimmed[k] = c[k]; });
+                localStorage.setItem('genCache', JSON.stringify(trimmed));
+            } catch { /* 저장 실패 무시 */ }
+        }
+
+        // 앙상블 호출 + 렌더 (+ 캐시)
+        async function generateEnsemble({ endpoint, payload, alertId, outputId, loadingMsg, filePrefix, cacheTag, regen, force }) {
+            const key = genCacheKey(cacheTag, payload);
+
+            if (!force) {
+                const hit = getGenCache(key);
+                if (hit && hit.merged) {
+                    renderEnsemble({ outputId, alertId, data: hit, filePrefix, regen, fromCache: true });
+                    return;
+                }
+            }
+
+            showAlert(alertId, loadingMsg, 'info');
+            document.getElementById(outputId).innerHTML = '';
+            try {
+                const resp = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || `서버 오류: ${resp.status}`);
+
+                setGenCache(key, { drafts: data.drafts, merged: data.merged });
+                renderEnsemble({ outputId, alertId, data, filePrefix, regen, fromCache: false });
+            } catch (error) {
+                showAlert(alertId, `오류: ${error.message}`, 'error');
+            }
+        }
+
+        function renderEnsemble({ outputId, alertId, data, filePrefix, regen, fromCache }) {
+            const merged = data.merged || '';
+            const drafts = Array.isArray(data.drafts) ? data.drafts : [];
+            const mergedId = outputId + '_merged';
+
+            const draftsHtml = drafts.map((d, i) => `
+                <div style="margin-top:14px;">
+                    <div style="font-weight:600; color:#555; margin-bottom:6px;">초안 ${i + 1}${d.label ? ' · ' + escapeHtml(d.label) : ''}</div>
+                    <div class="output-box" id="${outputId}_d${i}">${escapeHtml(d.text || '')}</div>
+                    <button class="button secondary" style="margin-top:8px;" onclick="copyText('${outputId}_d${i}')">복사</button>
+                </div>`).join('');
+
+            showAlert(alertId, fromCache ? '이전에 만든 결과를 불러왔습니다. (새로 만들려면 "다시 생성")' : '완료되었습니다. 초안 3개를 병합한 완성본입니다.', 'success');
+
+            document.getElementById(outputId).innerHTML = `
+                <h3 style="margin:20px 0 10px;">완성본 <span style="font-size:13px; color:#999; font-weight:400;">3개 초안 병합</span></h3>
+                <div class="output-box" id="${mergedId}">${escapeHtml(merged)}</div>
+                <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="button secondary" onclick="copyText('${mergedId}')">복사</button>
+                    <button class="button secondary" onclick="downloadText('${filePrefix}_${Date.now()}.txt', document.getElementById('${mergedId}').innerText)">다운로드</button>
+                    <button class="button secondary" onclick="${regen}(true)">다시 생성</button>
+                </div>
+                <details style="margin-top:22px;">
+                    <summary style="cursor:pointer; color:#667eea; font-weight:500;">초안 3개 따로 보기</summary>
+                    ${draftsHtml}
+                </details>`;
         }
 
         // 알림 표시
@@ -926,10 +1608,16 @@
                 .replace(/>/g, '&gt;');
         }
 
-        // 텍스트 복사
+        // 텍스트 복사 (컨테이너 안의 .output-box)
         function copyToClipboard(elementId) {
             const text = document.querySelector(`#${elementId} .output-box`).innerText;
             navigator.clipboard.writeText(text).then(() => alert('클립보드에 복사되었습니다.'));
+        }
+
+        // 텍스트 복사 (해당 요소 자체)
+        function copyText(elementId) {
+            const el = document.getElementById(elementId);
+            if (el) navigator.clipboard.writeText(el.innerText).then(() => alert('클립보드에 복사되었습니다.'));
         }
 
         // 파일 다운로드
@@ -946,7 +1634,7 @@
         // 데이터 내보내기
         function exportData() {
             const data = {
-                profile: localStorage.getItem('profile'),
+                goData: localStorage.getItem('goData'),
                 exportDate: new Date().toISOString(),
             };
             downloadText('go_data.json', JSON.stringify(data, null, 2));
@@ -964,11 +1652,20 @@
                 reader.onload = (event) => {
                     try {
                         const data = JSON.parse(event.target.result);
-                        if (data.profile) localStorage.setItem('profile', data.profile);
+                        if (data.goData) {
+                            // 신버전 백업 (직무별 프로필)
+                            localStorage.setItem('goData', data.goData);
+                        } else if (data.profile) {
+                            // 구버전 백업 → 마이그레이션 경로로 흡수
+                            localStorage.setItem('profile', data.profile);
+                            localStorage.removeItem('goData');
+                            loadData();
+                        }
+                        renderProfileSwitcher();
                         showManualEntry();
-                        showAlert('settingsOutput', '✅ 데이터를 불러왔습니다.', 'success');
+                        showAlert('settingsOutput', '데이터를 불러왔습니다.', 'success');
                     } catch (error) {
-                        showAlert('settingsOutput', '❌ 파일 형식이 잘못되었습니다.', 'error');
+                        showAlert('settingsOutput', '파일 형식이 잘못되었습니다.', 'error');
                     }
                 };
                 reader.readAsText(file);
@@ -986,12 +1683,14 @@
 
         // 페이지 로드
         window.addEventListener('load', () => {
+            loadData();            // 구버전 'profile' → 'goData' 마이그레이션 수행
+            renderProfileSwitcher();
             const p = getProfile();
             if (p.position) {
-                // 이미 프로필이 있는 사용자 → 바로 검토/수정 폼
-                showManualEntry();
+                // 이미 내용이 있는 활성 직무 → 읽기 전용 보기 화면
+                showProfileView();
             } else {
-                // 신규 사용자 → 업로드 중심 시작 화면
+                // 신규 사용자 / 빈 직무 → 업로드 중심 시작 화면
                 document.getElementById('profileStart').style.display = 'block';
                 document.getElementById('profileForm').style.display = 'none';
             }

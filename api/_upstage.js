@@ -58,6 +58,42 @@ export function profileBlock(profile = {}) {
     .join('\n');
 }
 
+// 마크다운 표시 제거 → 지원서에 바로 붙일 수 있는 일반 텍스트
+export function stripMarkdown(s) {
+  return String(s || '')
+    .replace(/```[a-z]*\n?/gi, '')          // 코드펜스
+    .replace(/`([^`]+)`/g, '$1')            // 인라인 코드
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')     // 헤더 ##
+    .replace(/\*\*(.+?)\*\*/g, '$1')        // 굵게 **
+    .replace(/__(.+?)__/g, '$1')            // 굵게 __
+    .replace(/(^|[^*])\*(?!\s)([^*\n]+?)\*(?!\*)/g, '$1$2') // 기울임 *
+    .replace(/^\s*[-*•]\s+/gm, '· ')        // 불릿 → ·
+    .replace(/^\s*>\s?/gm, '')              // 인용 >
+    .replace(/^\s*-{3,}\s*$/gm, '')         // 수평선 ---
+    .replace(/ *\/\/ */g, ' ')              // // 제거(주변 공백 정리)
+    .replace(/[ \t]{2,}/g, ' ')             // 중복 공백
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// 앙상블: 여러 관점의 초안을 병렬 생성 → 편집자 패스로 병합
+// angles: [{ label, focus }], draftPrompt(angle)→string, mergePrompt(cleanDrafts)→string
+export async function runEnsemble({ angles, draftPrompt, mergePrompt, draftTokens = 2200, mergeTokens = 3000 }) {
+  // 초안 병렬 생성 (속도)
+  const raw = await Promise.all(
+    angles.map((a) => callSolar([{ role: 'user', content: draftPrompt(a) }], draftTokens))
+  );
+  const cleanDrafts = raw.map(stripMarkdown);
+
+  // 병합 (편집자)
+  const mergedRaw = await callSolar([{ role: 'user', content: mergePrompt(cleanDrafts) }], mergeTokens);
+
+  return {
+    drafts: cleanDrafts.map((text, i) => ({ label: angles[i].label, text })),
+    merged: stripMarkdown(mergedRaw),
+  };
+}
+
 // 공통 응답 헬퍼
 export function sendError(res, error) {
   const status = error.status || 500;
