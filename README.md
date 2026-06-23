@@ -49,7 +49,7 @@ API(공고 분석·자소서·이력서·프로필 자동분석)를 로컬에서
 # 1. Vercel CLI 설치 (최초 1회)
 npm i -g vercel
 
-# 2. 프로젝트 루트에 .env.local 생성
+# 2. 프로젝트 루트에 .env 생성
 #    UPSTAGE_API_KEY=up_xxxxxxxx...   (= 양옆 공백·따옴표 없이)
 
 # 3. 로컬 서버 실행
@@ -57,6 +57,11 @@ vercel dev
 ```
 
 → http://localhost:3000 에서 접속하면 `/api/*` 함수가 동작합니다.
+
+> ⚠️ **환경 변수 파일은 `.env` 를 사용하세요.** 이 프로젝트는 프레임워크가 없는
+> 정적 + `/api` 함수 구조라, `vercel dev`는 `.env.local`이 아니라 `.env` 를 로드합니다.
+> (`.env`, `.env.local` 모두 git에서 제외됩니다.)
+> 환경 변수를 바꾼 뒤에는 `vercel dev` 를 **재시작**해야 반영됩니다.
 
 > ⚠️ **`index.html`을 file:// 로 직접 열면 API 호출이 차단됩니다.**
 > file:// 환경에서는 이력서 업로드 시 텍스트 추출까지만 수행하고, AI 분석은
@@ -77,7 +82,7 @@ ESM(`import`/`export`)을 쓰므로 `package.json`에 `"type": "module"`이 필�
 │   ├── generate-cover-letter.js  # 자기소개서 초안
 │   └── generate-resume.js        # 이력서 생성
 ├── package.json                  # type: module (ESM) + dev 스크립트
-├── .env.local                    # UPSTAGE_API_KEY (git 제외)
+├── .env                          # UPSTAGE_API_KEY (git 제외, vercel dev가 로드)
 ├── vercel.json                   # Vercel 배포 설정
 └── README.md
 ```
