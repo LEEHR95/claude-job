@@ -37,5 +37,6 @@
 <!-- MEMORY.md에서 5개 초과한 세션 로그 보관 -->
 | 날짜 | 한줄요약 | 산출물 |
 |------|---------|--------|
+| 2026-06-23 | 기존 자소서·이력서 업로드(PDF/Word) → 문체 참고 생성 | index.html, api/generate-cover-letter.js, api/generate-resume.js |
 | 2026-06-23 | API 보안 강화 (Vercel Function) | api/claude.js, vercel.json, README.md |
 | 2026-06-22 | index.html 생성 | 프로필·이력서·공고분석 기능 |

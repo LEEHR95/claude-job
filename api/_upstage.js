@@ -44,12 +44,26 @@ export async function callSolar(messages, maxTokens = 2000) {
 
 // 프로필 객체를 프롬프트용 텍스트 블록으로 변환
 export function profileBlock(profile = {}) {
+  // 기술 스택: [{name, detail}] 배열 또는 구버전 문자열 모두 지원
+  let skillsText;
+  if (Array.isArray(profile.skills)) {
+    skillsText = profile.skills
+      .map((s) => (s && typeof s === 'object' ? (s.detail ? `${s.name} (${s.detail})` : s.name) : String(s)))
+      .filter(Boolean)
+      .join(', ');
+  } else {
+    skillsText = profile.skills || '';
+  }
   return [
     `지원 직무: ${profile.position || '-'}`,
     `경력: ${profile.experience || '-'}년`,
-    `기술 스택: ${profile.skills || '-'}`,
+    `기술 스택: ${skillsText || '-'}`,
     `프로젝트 경험: ${profile.projects || '-'}`,
     `강점: ${profile.strengths || '-'}`,
+    profile.education ? `학력·교육:\n${profile.education}` : '',
+    profile.certifications ? `자격증:\n${profile.certifications}` : '',
+    profile.awards ? `수상·활동:\n${profile.awards}` : '',
+    profile.links ? `링크:\n${profile.links}` : '',
     profile.name ? `이름: ${profile.name}` : '',
     profile.email ? `이메일: ${profile.email}` : '',
     profile.phone ? `전화: ${profile.phone}` : '',

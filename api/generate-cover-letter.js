@@ -1,4 +1,5 @@
 import { profileBlock, sendError, runEnsemble } from './_upstage.js';
+import { COVER_GUIDE } from './_writing-rules.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -49,15 +50,20 @@ ${jobPosting}`;
 
   const draftPrompt = (a) =>
     `당신은 한국 채용 자기소개서 작성 전문가입니다.
+${COVER_GUIDE}
+
 ${base}
 
-${a.focus} 자기소개서 초안을 작성하세요.
+${a.focus} 자기소개서 초안을 작성하세요. 위 작성 규칙을 반드시 지키세요.
 ${rules}`;
 
   const mergePrompt = (drafts) =>
     `당신은 자기소개서 편집 전문가입니다.
+${COVER_GUIDE}
+
 아래는 같은 지원자의 자기소개서 초안 ${drafts.length}개입니다. 각각 강조점이 다릅니다.
 각 초안에서 가장 설득력 있는 표현·사례·구성을 골라 하나의 완성된 자기소개서로 통합하세요.
+위 작성 규칙을 기준으로 규칙에 어긋나는 표현(나 중심 동기, 수치 없는 나열, 뻔한 문장 등)은 고치세요.
 중복은 제거하고 흐름을 매끄럽게 다듬되, 지원자의 말투와 자주 쓰는 단어는 유지하세요.
 마크다운 기호 없이 일반 텍스트로, 같은 4개 섹션(지원 동기 / 직무 역량 / 문제 해결 경험 / 입사 후 포부)으로 출력하세요.
 

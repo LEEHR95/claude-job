@@ -186,6 +186,39 @@
         .alert.error { background: #ffebee; color: #d32f2f; border-left: 4px solid #d32f2f; }
         .alert.warning { background: #fff3e0; color: #f57c00; border-left: 4px solid #f57c00; }
 
+        /* 가운데 로딩 오버레이 */
+        .loading-overlay {
+            position: fixed; inset: 0; z-index: 2000;
+            background: rgba(0, 0, 0, 0.25);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .loading-box {
+            background: #fff; padding: 30px 38px; border-radius: 14px;
+            text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+            max-width: 80%;
+        }
+        .spinner {
+            width: 46px; height: 46px; margin: 0 auto;
+            border: 5px solid #ece9e0; border-top-color: #667eea;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-msg { margin-top: 16px; color: #555; font-size: 14px; line-height: 1.5; }
+
+        /* 가운데 토스트 안내 */
+        .toast {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 2100; padding: 16px 26px; border-radius: 10px;
+            font-size: 15px; max-width: 80%; text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            animation: toastIn 0.18s ease-out;
+        }
+        @keyframes toastIn { from { opacity: 0; transform: translate(-50%, -46%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+        .toast.info { background: #e3f2fd; color: #1976d2; }
+        .toast.success { background: #e8f5e9; color: #388e3c; }
+        .toast.error { background: #ffebee; color: #d32f2f; }
+        .toast.warning { background: #fff3e0; color: #e65100; }
+
         .output-box {
             background: #f9f9f9;
             border: 1px solid #e0e0e0;
@@ -239,6 +272,22 @@
             margin-bottom: 8px;
             font-size: 12px;
         }
+
+        /* 공고↔프로젝트 매칭 패널 */
+        .match-panel {
+            background: #f0eee6; border: 1px solid #e6e2d6;
+            border-radius: 10px; padding: 16px 18px; margin-top: 8px;
+        }
+        .match-title { font-weight: 700; color: #444; margin-bottom: 10px; }
+        .match-item {
+            background: #fff; border: 1px solid #eee; border-radius: 8px;
+            padding: 12px 14px; margin-bottom: 10px;
+        }
+        .match-score {
+            background: #388e3c; color: #fff; font-size: 11px;
+            padding: 2px 8px; border-radius: 10px; margin-left: 6px; vertical-align: middle;
+        }
+        .skill-tag.matched { background: #388e3c; }
 
         @media (max-width: 768px) {
             .form-row { grid-template-columns: 1fr; }
@@ -314,6 +363,7 @@
             <button class="tab-button" onclick="showTab('analysis', this)">공고 분석</button>
             <button class="tab-button" onclick="showTab('cover', this)">자기소개서 초안</button>
             <button class="tab-button" onclick="showTab('resume', this)">이력서 생성</button>
+            <button class="tab-button" onclick="showTab('history', this)">지원 이력</button>
             <button class="tab-button" onclick="showTab('settings', this)">설정</button>
         </div>
 
@@ -373,8 +423,9 @@
                 </div>
 
                 <div class="form-group" id="fg-skills">
-                    <label for="skills">기술 스택 <span class="optional-tag">쉼표로 구분</span></label>
-                    <textarea id="skills" placeholder="예: Python, React, SQL, AWS"></textarea>
+                    <label for="skills">기술 스택 <span class="optional-tag">한 줄에 하나씩 · 스킬명 | 정량설명</span></label>
+                    <textarea id="skills" placeholder="예: Java | 8/11, 2년&#10;React | 1.5년, 프로젝트 5개&#10;SQL | 테이블 20개 설계 경험"></textarea>
+                    <p style="color:#999; font-size:12px; margin-top:6px;">상/중/하 대신 버전·기간·규모 등 정량 정보를 적으면 면접관 신뢰도가 올라갑니다. 설명은 생략 가능.</p>
                 </div>
 
                 <div class="form-group" id="fg-projects">
@@ -387,6 +438,26 @@
                 <div class="form-group" id="fg-strengths">
                     <label for="strengths">강점</label>
                     <textarea id="strengths" placeholder="직무와 관련된 본인의 강점을 적어주세요."></textarea>
+                </div>
+
+                <div class="form-group" id="fg-education">
+                    <label for="education">학력 · 교육 <span class="optional-tag">한 줄에 하나씩</span></label>
+                    <textarea id="education" placeholder="예: 웹 개발자 과정(백엔드/프론트엔드) 6개월&#10;OO대학교 컴퓨터공학과 졸업"></textarea>
+                </div>
+
+                <div class="form-group" id="fg-certifications">
+                    <label for="certifications">자격증 <span class="optional-tag">한 줄에 하나씩</span></label>
+                    <textarea id="certifications" placeholder="예: 정보처리기사 (2024.05)&#10;SQLD"></textarea>
+                </div>
+
+                <div class="form-group" id="fg-awards">
+                    <label for="awards">수상 · 활동 <span class="optional-tag">한 줄에 하나씩</span></label>
+                    <textarea id="awards" placeholder="예: OO 해커톤 대상 (2024)&#10;사내 스터디 리드"></textarea>
+                </div>
+
+                <div class="form-group" id="fg-links">
+                    <label for="links">링크 <span class="optional-tag">한 줄에 하나씩 · 설명 | 주소</span></label>
+                    <textarea id="links" placeholder="예: GitHub - 스프링 쇼핑몰 | https://github.com/...&#10;기술 블로그 | https://..."></textarea>
                 </div>
 
                 <h3 style="margin: 30px 0 15px; color: #666; font-size: 15px;">기존 자기소개서 <span class="optional-tag">선택 · 문체/톤 참고용</span></h3>
@@ -465,6 +536,7 @@
 
             <button class="button" onclick="analyzePosting()">분석</button>
 
+            <div id="matchOutput" style="margin-top:18px;"></div>
             <div id="analysisOutput"></div>
         </div>
 
@@ -477,8 +549,10 @@
 
             <div class="form-group">
                 <label for="coverPosting">채용 공고</label>
-                <textarea id="coverPosting" placeholder="채용 공고 전체 내용을 여기에 붙여넣으세요." style="min-height: 150px;"></textarea>
+                <textarea id="coverPosting" placeholder="채용 공고 전체 내용을 여기에 붙여넣으세요." style="min-height: 150px;" oninput="renderJobMatches(this.value, 'coverMatchOutput')"></textarea>
             </div>
+
+            <div id="coverMatchOutput" style="margin-bottom:18px;"></div>
 
             <button class="button" onclick="generateCoverLetter()">자기소개서 초안 생성</button>
 
@@ -505,6 +579,25 @@
             <button class="button" onclick="generateResume()">이력서 생성</button>
 
             <div id="resumeOutput"></div>
+        </div>
+
+        <!-- 지원 이력 탭 -->
+        <div id="history" class="tab-content">
+            <h2>지원 이력</h2>
+            <p style="color: #666; margin-bottom: 20px;">공고 분석·자기소개서·이력서 생성 결과가 자동으로 여기에 쌓입니다. 다시 열어 보거나 복사·다운로드할 수 있어요.</p>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
+                <select id="historyFilter" onchange="renderHistory()" style="padding:8px 10px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="">전체 유형</option>
+                    <option value="analysis">공고 분석</option>
+                    <option value="cover">자기소개서</option>
+                    <option value="resume">이력서</option>
+                </select>
+                <span id="historyCount" style="color:#999; font-size:13px;"></span>
+                <button class="button secondary" style="margin-left:auto;" onclick="clearHistory()">전체 삭제</button>
+            </div>
+
+            <div id="historyList"></div>
         </div>
 
         <!-- 설정 탭 -->
@@ -547,6 +640,7 @@
             document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
             document.getElementById(tabName).classList.add('active');
             btn.classList.add('active');
+            if (tabName === 'history') renderHistory();
         }
 
         // ── 저장 모델: localStorage['goData'] = { activeProfileId, profiles: [...] }
@@ -584,6 +678,40 @@
             return data.profiles.find(p => p.id === data.activeProfileId) || {};
         }
 
+        // ── 기술 스택: [{name, detail}] 배열 모델 (구버전 쉼표 문자열 자동 변환) ──
+        function parseSkills(val) {
+            if (Array.isArray(val)) {
+                return val.map(s => {
+                    if (s && typeof s === 'object') return { name: String(s.name || '').trim(), detail: String(s.detail || s.level || '').trim() };
+                    return { name: String(s || '').trim(), detail: '' };
+                }).filter(s => s.name);
+            }
+            const str = String(val || '').trim();
+            if (!str) return [];
+            // 줄바꿈 있으면 줄 단위, 없으면 구버전 쉼표 분리
+            const lines = str.includes('\n') ? str.split('\n') : str.split(',');
+            return lines.map(line => {
+                const t = line.trim();
+                if (!t) return null;
+                const m = t.split(/\s*[|:]\s*/);
+                return { name: (m[0] || '').trim(), detail: (m.slice(1).join(' | ') || '').trim() };
+            }).filter(s => s && s.name);
+        }
+        // 배열 → textarea 텍스트 ("name | detail" 줄)
+        function skillsToText(arr) {
+            return parseSkills(arr).map(s => s.detail ? `${s.name} | ${s.detail}` : s.name).join('\n');
+        }
+        // 두 스킬 목록 병합 (이름 기준 중복 제거, detail은 기존 우선·없으면 새 값)
+        function mergeSkills(a, b) {
+            const out = [], idx = {};
+            [...parseSkills(a), ...parseSkills(b)].forEach(s => {
+                const key = s.name.toLowerCase();
+                if (idx[key] === undefined) { idx[key] = out.length; out.push({ ...s }); }
+                else if (!out[idx[key]].detail && s.detail) out[idx[key]].detail = s.detail;
+            });
+            return out;
+        }
+
         // 활성 프로필 슬롯에 객체를 병합 저장 (id/label 보존). 활성 슬롯 없으면 새로 생성.
         function saveActiveProfile(obj) {
             const data = loadData();
@@ -608,11 +736,15 @@
             const profile = {
                 position: document.getElementById('position').value,
                 experience: document.getElementById('experience').value,
-                skills: document.getElementById('skills').value,
+                skills: parseSkills(document.getElementById('skills').value),
                 // 프로젝트는 카드로 즉시 저장되므로 기존 값 보존 (텍스트는 카드에서 동기화됨)
                 projects: prev.projects || '',
                 projectCards: prev.projectCards || [],
                 strengths: document.getElementById('strengths').value,
+                education: document.getElementById('education').value,
+                certifications: document.getElementById('certifications').value,
+                awards: document.getElementById('awards').value,
+                links: document.getElementById('links').value,
                 name: document.getElementById('name').value,
                 email: document.getElementById('email').value,
                 phone: document.getElementById('phone').value,
@@ -648,9 +780,11 @@
         // 프로필 입력란 채우기
         function fillProfileForm() {
             const p = getProfile();
-            ['position', 'experience', 'skills', 'strengths', 'name', 'email', 'phone'].forEach(id => {
+            ['position', 'experience', 'strengths', 'education', 'certifications', 'awards', 'links', 'name', 'email', 'phone'].forEach(id => {
                 document.getElementById(id).value = (p[id] !== undefined && p[id] !== null) ? p[id] : '';
             });
+            // 기술 스택은 배열 → "name | detail" 줄 텍스트로
+            document.getElementById('skills').value = skillsToText(p.skills);
             clearEvidence();
             cancelProjectCard();
             renderProjectCards();
@@ -768,9 +902,10 @@
         }
 
         function buildProfileViewHtml(p) {
-            const skills = (p.skills || '').split(',').map(s => s.trim()).filter(Boolean)
-                .map(s => `<span class="skill-tag">${escapeHtml(s)}</span>`).join('')
-                || '<span style="color:#999;">-</span>';
+            const skillArr = parseSkills(p.skills);
+            const skills = skillArr.length
+                ? skillArr.map(s => `<span class="skill-tag">${escapeHtml(s.name)}${s.detail ? ` <span style="opacity:.85;font-weight:400;">· ${escapeHtml(s.detail)}</span>` : ''}</span>`).join('')
+                : '<span style="color:#999;">-</span>';
 
             const cards = p.projectCards || [];
             const cardsHtml = cards.length ? cards.map(c => {
@@ -795,6 +930,26 @@
             ].filter(Boolean).join(' · ');
 
             const h3 = 'margin:26px 0 12px; color:#444; font-size:15px;';
+
+            // 줄 단위 목록 섹션 (학력/자격증/수상)
+            const listSection = (title, val) => {
+                const items = String(val || '').split('\n').map(s => s.trim()).filter(Boolean);
+                if (!items.length) return '';
+                return `<h3 style="${h3}">${title}</h3><ul style="margin:0 0 0 18px; color:#555; font-size:14px;">${items.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>`;
+            };
+            // 링크 섹션 ("설명 | 주소" → 클릭 가능)
+            const linksHtml = (() => {
+                const items = String(p.links || '').split('\n').map(s => s.trim()).filter(Boolean);
+                if (!items.length) return '';
+                const lis = items.map(line => {
+                    const i = line.search(/https?:\/\//);
+                    if (i === -1) return `<li>${escapeHtml(line)}</li>`;
+                    const url = line.slice(i).trim();
+                    const label = line.slice(0, i).replace(/[|\-:\s]+$/, '').trim();
+                    return `<li>${label ? escapeHtml(label) + ' — ' : ''}<a href="${escapeAttr(url)}" target="_blank" rel="noopener" style="color:#667eea;">${escapeHtml(url)}</a></li>`;
+                }).join('');
+                return `<h3 style="${h3}">링크</h3><ul style="margin:0 0 0 18px; color:#555; font-size:14px;">${lis}</ul>`;
+            })();
             return `
                 <div id="profileViewStatus"></div>
                 <div class="profile-info">
@@ -806,10 +961,16 @@
                 <h3 style="${h3}">프로젝트</h3>
                 ${cardsHtml}
                 ${p.strengths ? `<h3 style="${h3}">강점</h3><div class="output-box">${escapeHtml(p.strengths)}</div>` : ''}
+                ${listSection('학력 · 교육', p.education)}
+                ${listSection('자격증', p.certifications)}
+                ${listSection('수상 · 활동', p.awards)}
+                ${linksHtml}
                 ${contact ? `<h3 style="${h3}">연락처</h3><div style="color:#555;font-size:14px;">${contact}</div>` : ''}
                 <div class="button-group" style="margin-top:26px;">
                     <button class="button" onclick="showManualEntry()">수정</button>
-                </div>`;
+                    <button class="button secondary" onclick="showProfileStart()">문서 추가 업로드</button>
+                </div>
+                <p style="color:#999; font-size:12px; margin-top:8px;">다른 이력서·경력기술서를 더 올리면 기존 프로필에 누적 병합됩니다.</p>`;
         }
 
         // 기존 문서 업로드 처리 (PDF/Word → 텍스트 추출 후 프로필에 저장)
@@ -995,34 +1156,60 @@
             displayDocStatus();
         }
 
-        // AI 분석 결과로 검토 폼 채우기 + 신뢰도 배너 표시
+        // ── 병합 업로드 헬퍼: 여러 문서를 누적 (중복 제거) ──
+        function mergeUniq(list) {
+            const out = [], seen = new Set();
+            list.forEach(x => { const v = String(x).trim(); const k = v.toLowerCase(); if (v && !seen.has(k)) { seen.add(k); out.push(v); } });
+            return out;
+        }
+        const toLines = v => Array.isArray(v) ? v.map(s => String(s).trim()).filter(Boolean) : String(v || '').split('\n').map(s => s.trim()).filter(Boolean);
+        const toCsv = v => Array.isArray(v) ? v.map(s => String(s).trim()).filter(Boolean) : String(v || '').split(',').map(s => s.trim()).filter(Boolean);
+        const mergeLines = (a, b) => mergeUniq([...toLines(a), ...toLines(b)]).join('\n');
+        const mergeCsv = (a, b) => mergeUniq([...toCsv(a), ...toCsv(b)]).join(', ');
+        const normTitle = t => String(t || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+        // AI 분석 결과로 검토 폼 채우기 + 신뢰도 배너 표시 (기존 프로필에 병합)
         function showReviewForm(analysis) {
             const profile = getProfile();
             const existingCards = profile.projectCards || [];
             const aiCards = Array.isArray(analysis.projectCards) ? analysis.projectCards : [];
+            const hadContent = !!(String(profile.position || '').trim() || existingCards.length || parseSkills(profile.skills).length);
 
-            // 기본 필드 채우기
-            ['position', 'experience', 'skills', 'strengths'].forEach(id => {
-                if (analysis[id] !== undefined) profile[id] = analysis[id];
+            // 스칼라 텍스트: 비어 있을 때만 AI 값으로 채움 (기존 입력 보존)
+            ['position', 'strengths'].forEach(id => {
+                if (analysis[id] !== undefined && !String(profile[id] || '').trim()) profile[id] = analysis[id];
+            });
+            // 경력: 더 큰 값 사용
+            if (analysis.experience !== undefined) {
+                const a = parseInt(analysis.experience, 10) || 0, b = parseInt(profile.experience, 10) || 0;
+                profile.experience = String(Math.max(a, b));
+            }
+            // 기술 스택 / 학력·자격증·수상·링크: 합집합 누적
+            profile.skills = mergeSkills(profile.skills, analysis.skills);
+            ['education', 'certifications', 'awards', 'links'].forEach(id => {
+                profile[id] = mergeLines(profile[id], analysis[id]);
             });
 
-            // 프로젝트: 기존 카드가 없을 때만 AI 추출 결과로 채움 (사용자가 만든 카드는 보존)
+            // 프로젝트 카드: 제목 기준 중복을 빼고 기존에 이어붙임
             let importedCount = 0;
-            if (!existingCards.length && aiCards.length) {
-                profile.projectCards = aiCards.map(c => ({
+            if (aiCards.length) {
+                const seen = new Set(existingCards.map(c => normTitle(c.title)));
+                const added = aiCards.filter(c => {
+                    const t = normTitle(c.title);
+                    if (!t || seen.has(t)) return false;
+                    seen.add(t); return true;
+                }).map(c => ({
                     id: genId(),
-                    title: c.title || '',
-                    period: c.period || '',
-                    role: c.role || '',
-                    summary: c.summary || '',
+                    title: c.title || '', period: c.period || '', role: c.role || '', summary: c.summary || '',
                     contributions: Array.isArray(c.contributions) ? c.contributions : [],
                     outcomes: Array.isArray(c.outcomes) ? c.outcomes : [],
                     techStack: Array.isArray(c.techStack) ? c.techStack : [],
                     tags: Array.isArray(c.tags) ? c.tags : [],
                 }));
+                profile.projectCards = existingCards.concat(added);
                 profile.projects = cardsToText(profile.projectCards);
-                importedCount = profile.projectCards.length;
-            } else if (!existingCards.length && analysis.projects !== undefined) {
+                importedCount = added.length;
+            } else if (!String(profile.projects || '').trim() && analysis.projects !== undefined) {
                 profile.projects = analysis.projects; // 카드를 못 뽑았으면 텍스트 요약 사용
             }
 
@@ -1058,13 +1245,17 @@
                 ? `<div style="margin-top:8px; font-size:13px;">확인이 필요한 항목: <strong>${uncertain.map(k => labels[k] || k).join(', ')}</strong></div>`
                 : '';
             const cardsNote = importedCount
-                ? `<div style="margin-top:8px; font-size:13px;">프로젝트 <strong>${importedCount}개</strong>를 카드로 정리했습니다. 내용을 확인·수정하세요.</div>`
+                ? `<div style="margin-top:8px; font-size:13px;">프로젝트 <strong>${importedCount}개</strong>를 카드로 추가했습니다. 내용을 확인·수정하세요.</div>`
+                : '';
+            const mergeNote = hadContent
+                ? `<div style="margin-top:8px; font-size:13px; color:#1565c0;">기존 프로필에 <strong>병합</strong>했습니다. 기술 스택·학력·자격증·수상·링크는 누적되고, 직무·강점 등 기존 입력은 보존됩니다.</div>`
                 : '';
 
             document.getElementById('aiConfidenceBanner').innerHTML = `
                 <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:10px; padding:14px 16px; margin-bottom:18px;">
                     <div style="font-weight:600; color:#2e7d32;">AI 분석 완료 · 신뢰도 ${conf}%</div>
-                    <div style="margin-top:6px; font-size:13px; color:#555;">AI가 이력서에서 추출한 정보입니다. 틀린 부분을 수정한 뒤 저장해 주세요.</div>
+                    <div style="margin-top:6px; font-size:13px; color:#555;">AI가 문서에서 추출한 정보입니다. 틀린 부분을 수정한 뒤 저장해 주세요.</div>
+                    ${mergeNote}
                     ${cardsNote}
                     ${uncertainList}
                 </div>`;
@@ -1184,6 +1375,47 @@
             p.projectCards = cards;
             p.projects = cardsToText(cards);
             saveActiveProfile(p);
+        }
+
+        // ── 공고 ↔ 내 프로젝트 매칭 (클라이언트, tags/techStack 기반) ──
+        function matchProjectsToJob(jobText) {
+            const text = String(jobText || '').toLowerCase();
+            if (!text.trim()) return [];
+            return getCards().map(c => {
+                const terms = [...(c.tags || []), ...(c.techStack || [])]
+                    .map(t => String(t).trim()).filter(t => t.length >= 2);
+                const seen = new Set();
+                const matched = [];
+                terms.forEach(t => {
+                    const key = t.toLowerCase();
+                    if (seen.has(key)) return;
+                    seen.add(key);
+                    if (text.includes(key)) matched.push(t);
+                });
+                return { card: c, matched, score: matched.length };
+            }).filter(m => m.score > 0).sort((a, b) => b.score - a.score);
+        }
+
+        function renderJobMatches(jobText, targetId = 'matchOutput') {
+            const el = document.getElementById(targetId);
+            if (!el) return;
+            if (!getCards().length) { el.innerHTML = ''; return; }
+            const matches = matchProjectsToJob(jobText);
+            if (!matches.length) {
+                el.innerHTML = `<div class="match-panel"><div class="match-title">이 공고와 맞는 내 프로젝트</div><p style="color:#999;font-size:13px;margin:0;">매칭되는 태그·기술이 없습니다. 프로필 탭에서 각 프로젝트에 '매칭 태그'를 넣으면 추천이 좋아집니다.</p></div>`;
+                return;
+            }
+            const top = matches.slice(0, 5);
+            el.innerHTML = `<div class="match-panel">
+                <div class="match-title">이 공고와 맞는 내 프로젝트 <span style="color:#999;font-weight:400;font-size:12px;">상위 ${top.length}개</span></div>
+                ${top.map(m => `
+                    <div class="match-item">
+                        <div><strong>${escapeHtml(m.card.title || '(제목없음)')}</strong><span class="match-score">일치 ${m.score}</span></div>
+                        ${m.card.summary ? `<div style="color:#777;font-size:13px;margin-top:3px;">${escapeHtml(m.card.summary)}</div>` : ''}
+                        <div style="margin-top:6px;">${m.matched.map(t => `<span class="skill-tag matched">${escapeHtml(t)}</span>`).join('')}</div>
+                    </div>`).join('')}
+                <p style="color:#999;font-size:12px;margin:4px 0 0;">자소서·이력서에서 위 프로젝트를 우선 강조하면 적합도가 올라갑니다.</p>
+            </div>`;
         }
 
         function renderProjectCards() {
@@ -1319,8 +1551,8 @@
         }
 
         // 공통 API 호출 + 출력 렌더링
-        async function callAndRender({ endpoint, payload, alertId, outputId, loadingMsg, successMsg, filePrefix }) {
-            showAlert(alertId, loadingMsg, 'info');
+        async function callAndRender({ endpoint, payload, alertId, outputId, loadingMsg, successMsg, filePrefix, historyType, historyTitle, onSuccess }) {
+            showLoading(loadingMsg);
             document.getElementById(outputId).innerHTML = '';
 
             try {
@@ -1335,7 +1567,8 @@
                     throw new Error(data.error || `서버 오류: ${response.status}`);
                 }
 
-                showAlert(alertId, successMsg, 'success');
+                hideLoading();
+                showToast(successMsg, 'success');
                 document.getElementById(outputId).innerHTML = `
                     <div class="output-box">${escapeHtml(data.text)}</div>
                     <div style="margin-top: 15px;">
@@ -1343,8 +1576,13 @@
                         <button class="button secondary" onclick="downloadText('${filePrefix}_${Date.now()}.txt', document.querySelector('#${outputId} .output-box').innerText)">다운로드</button>
                     </div>
                 `;
+                if (historyType) {
+                    addHistory({ type: historyType, title: historyTitle, content: data.text });
+                }
+                if (typeof onSuccess === 'function') onSuccess();
             } catch (error) {
-                showAlert(alertId, `오류: ${error.message}`, 'error');
+                hideLoading();
+                showToast(`오류: ${error.message}`, 'error');
             }
         }
 
@@ -1462,6 +1700,9 @@
             if (!jobPosting.trim()) return showAlert('analysisAlert', '채용 공고를 입력해주세요.', 'warning');
             if (!profile.position) return showAlert('analysisAlert', '먼저 프로필을 저장해주세요.', 'warning');
 
+            // 공고↔프로젝트 매칭은 API 없이 즉시 표시 (AI 분석 로딩 중에도 먼저 보임)
+            renderJobMatches(jobPosting);
+
             await callAndRender({
                 endpoint: ENDPOINTS.analysis,
                 payload: { profile, jobPosting },
@@ -1470,6 +1711,16 @@
                 loadingMsg: '공고를 분석하고 지원 전략을 정리 중입니다...',
                 successMsg: '분석이 완료되었습니다.',
                 filePrefix: 'analysis',
+                historyType: 'analysis',
+                historyTitle: jobTitleFromPosting(jobPosting),
+                onSuccess: () => {
+                    // 분석에 쓴 공고를 자소서·이력서 탭으로 자동 전달
+                    const coverTa = document.getElementById('coverPosting');
+                    if (coverTa) { coverTa.value = jobPosting; renderJobMatches(jobPosting, 'coverMatchOutput'); }
+                    const jt = document.getElementById('jobTitle');
+                    if (jt && !jt.value.trim()) jt.value = jobTitleFromPosting(jobPosting);
+                    showToast('분석 완료 · 자소서·이력서 탭에 공고를 채워 두었어요.', 'success');
+                },
             });
         }
 
@@ -1491,6 +1742,8 @@
                 cacheTag: 'cover',
                 regen: 'generateCoverLetter',
                 force: !!force,
+                historyType: 'cover',
+                historyTitle: jobTitleFromPosting(jobPosting),
             });
         }
 
@@ -1513,6 +1766,8 @@
                 cacheTag: 'resume',
                 regen: 'generateResume',
                 force: !!force,
+                historyType: 'resume',
+                historyTitle: (document.getElementById('jobTitle').value || '').trim() || '제목 없음',
             });
         }
 
@@ -1538,7 +1793,7 @@
         }
 
         // 앙상블 호출 + 렌더 (+ 캐시)
-        async function generateEnsemble({ endpoint, payload, alertId, outputId, loadingMsg, filePrefix, cacheTag, regen, force }) {
+        async function generateEnsemble({ endpoint, payload, alertId, outputId, loadingMsg, filePrefix, cacheTag, regen, force, historyType, historyTitle }) {
             const key = genCacheKey(cacheTag, payload);
 
             if (!force) {
@@ -1549,7 +1804,7 @@
                 }
             }
 
-            showAlert(alertId, loadingMsg, 'info');
+            showLoading(loadingMsg);
             document.getElementById(outputId).innerHTML = '';
             try {
                 const resp = await fetch(endpoint, {
@@ -1560,10 +1815,15 @@
                 const data = await resp.json();
                 if (!resp.ok) throw new Error(data.error || `서버 오류: ${resp.status}`);
 
+                hideLoading();
                 setGenCache(key, { drafts: data.drafts, merged: data.merged });
                 renderEnsemble({ outputId, alertId, data, filePrefix, regen, fromCache: false });
+                if (historyType) {
+                    addHistory({ type: historyType, title: historyTitle, content: data.merged || '', drafts: data.drafts || [] });
+                }
             } catch (error) {
-                showAlert(alertId, `오류: ${error.message}`, 'error');
+                hideLoading();
+                showToast(`오류: ${error.message}`, 'error');
             }
         }
 
@@ -1595,9 +1855,151 @@
                 </details>`;
         }
 
-        // 알림 표시
+        // ── 지원 이력 저장 (localStorage['goHistory'] = [{id, ts, type, profileLabel, title, content, drafts}]) ──
+        const HISTORY_TYPES = { analysis: '공고 분석', cover: '자기소개서', resume: '이력서' };
+        const HISTORY_MAX = 50;
+
+        // 공고 본문에서 제목 추출 (첫 줄, 없으면 앞 30자)
+        function jobTitleFromPosting(text) {
+            const t = String(text || '').trim();
+            if (!t) return '제목 없음';
+            const firstLine = t.split('\n').map(s => s.trim()).find(s => s.length);
+            const title = (firstLine || t).slice(0, 40);
+            return title || '제목 없음';
+        }
+
+        function loadHistory() {
+            try { return JSON.parse(localStorage.getItem('goHistory') || '[]'); } catch { return []; }
+        }
+        function saveHistory(list) {
+            localStorage.setItem('goHistory', JSON.stringify(list.slice(0, HISTORY_MAX)));
+        }
+        function addHistory({ type, title, content, drafts }) {
+            if (!content) return;
+            const profile = getProfile();
+            const item = {
+                id: 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+                ts: Date.now(),
+                type,
+                profileLabel: profile.label || profile.position || '',
+                title: title || '제목 없음',
+                content,
+                drafts: Array.isArray(drafts) ? drafts : [],
+            };
+            const list = loadHistory();
+            list.unshift(item);
+            saveHistory(list);
+            renderHistory();
+        }
+        function deleteHistory(id) {
+            if (!confirm('이 이력을 삭제할까요?')) return;
+            saveHistory(loadHistory().filter(h => h.id !== id));
+            renderHistory();
+        }
+        function clearHistory() {
+            if (!loadHistory().length) return alert('저장된 이력이 없습니다.');
+            if (!confirm('지원 이력을 모두 삭제할까요? 되돌릴 수 없습니다.')) return;
+            saveHistory([]);
+            renderHistory();
+        }
+
+        function fmtDate(ts) {
+            const d = new Date(ts);
+            const p = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+        }
+
+        function renderHistory() {
+            const listEl = document.getElementById('historyList');
+            if (!listEl) return;
+            const filter = (document.getElementById('historyFilter') || {}).value || '';
+            const all = loadHistory();
+            const list = filter ? all.filter(h => h.type === filter) : all;
+
+            const countEl = document.getElementById('historyCount');
+            if (countEl) countEl.textContent = `총 ${all.length}건${filter ? ` · ${HISTORY_TYPES[filter]} ${list.length}건` : ''}`;
+
+            if (!list.length) {
+                listEl.innerHTML = '<p style="color:#999; font-size:14px;">아직 저장된 이력이 없습니다. 공고 분석·자기소개서·이력서를 만들면 자동으로 쌓입니다.</p>';
+                return;
+            }
+
+            listEl.innerHTML = list.map(h => {
+                const preview = escapeHtml(String(h.content).slice(0, 120));
+                return `
+                <div style="border:1px solid #eee; border-radius:8px; padding:14px 16px; margin-bottom:12px; background:#fff;">
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:6px;">
+                        <span style="background:#667eea; color:#fff; font-size:12px; padding:2px 8px; border-radius:10px;">${HISTORY_TYPES[h.type] || h.type}</span>
+                        ${h.profileLabel ? `<span style="background:#f0eee6; color:#555; font-size:12px; padding:2px 8px; border-radius:10px;">${escapeHtml(h.profileLabel)}</span>` : ''}
+                        <span style="font-weight:600;">${escapeHtml(h.title)}</span>
+                        <span style="color:#aaa; font-size:12px; margin-left:auto;">${fmtDate(h.ts)}</span>
+                    </div>
+                    <div style="color:#777; font-size:13px; line-height:1.5; white-space:pre-wrap;">${preview}${String(h.content).length > 120 ? '…' : ''}</div>
+                    <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="button secondary" onclick="viewHistory('${h.id}')">열기</button>
+                        <button class="button secondary" onclick="copyHistory('${h.id}')">복사</button>
+                        <button class="button secondary" onclick="downloadHistory('${h.id}')">다운로드</button>
+                        <button class="button secondary" onclick="deleteHistory('${h.id}')">삭제</button>
+                    </div>
+                    <div id="hview_${h.id}" style="margin-top:12px;"></div>
+                </div>`;
+            }).join('');
+        }
+
+        function viewHistory(id) {
+            const h = loadHistory().find(x => x.id === id);
+            const box = document.getElementById('hview_' + id);
+            if (!h || !box) return;
+            if (box.innerHTML) { box.innerHTML = ''; return; }  // 토글
+            const draftsHtml = (h.drafts || []).map((d, i) => `
+                <div style="margin-top:10px;">
+                    <div style="font-weight:600; color:#555; margin-bottom:4px;">초안 ${i + 1}${d.label ? ' · ' + escapeHtml(d.label) : ''}</div>
+                    <div class="output-box">${escapeHtml(d.text || '')}</div>
+                </div>`).join('');
+            box.innerHTML = `
+                <div class="output-box">${escapeHtml(h.content)}</div>
+                ${draftsHtml ? `<details style="margin-top:12px;"><summary style="cursor:pointer; color:#667eea;">초안 따로 보기</summary>${draftsHtml}</details>` : ''}`;
+        }
+        function copyHistory(id) {
+            const h = loadHistory().find(x => x.id === id);
+            if (h) navigator.clipboard.writeText(h.content).then(() => alert('클립보드에 복사되었습니다.'));
+        }
+        function downloadHistory(id) {
+            const h = loadHistory().find(x => x.id === id);
+            if (h) downloadText(`${h.type}_${h.id}.txt`, h.content);
+        }
+
+        // 가운데 로딩 애니메이션
+        function showLoading(message) {
+            hideLoading();
+            const el = document.createElement('div');
+            el.className = 'loading-overlay';
+            el.id = 'loadingOverlay';
+            el.innerHTML = `<div class="loading-box"><div class="spinner"></div><div class="loading-msg">${message || '처리 중입니다...'}</div></div>`;
+            document.body.appendChild(el);
+        }
+        function hideLoading() {
+            const el = document.getElementById('loadingOverlay');
+            if (el) el.remove();
+        }
+
+        // 가운데 토스트 안내 (containerId는 하위호환용으로 무시)
+        let _toastTimer = null;
+        function showToast(message, type) {
+            const old = document.getElementById('toast');
+            if (old) old.remove();
+            const el = document.createElement('div');
+            el.className = `toast ${type || 'info'}`;
+            el.id = 'toast';
+            el.innerHTML = message;
+            document.body.appendChild(el);
+            clearTimeout(_toastTimer);
+            _toastTimer = setTimeout(() => { const t = document.getElementById('toast'); if (t) t.remove(); }, type === 'error' ? 5000 : 3000);
+        }
+
+        // 알림 표시 (하위호환: 첫 인자 containerId는 무시하고 가운데 토스트로 표시)
         function showAlert(containerId, message, type) {
-            document.getElementById(containerId).innerHTML = `<div class="alert ${type}">${message}</div>`;
+            showToast(message, type);
         }
 
         // HTML 이스케이프 (출력 안전)
@@ -1635,6 +2037,7 @@
         function exportData() {
             const data = {
                 goData: localStorage.getItem('goData'),
+                goHistory: localStorage.getItem('goHistory'),
                 exportDate: new Date().toISOString(),
             };
             downloadText('go_data.json', JSON.stringify(data, null, 2));
@@ -1661,8 +2064,10 @@
                             localStorage.removeItem('goData');
                             loadData();
                         }
+                        if (data.goHistory) localStorage.setItem('goHistory', data.goHistory);
                         renderProfileSwitcher();
                         showManualEntry();
+                        renderHistory();
                         showAlert('settingsOutput', '데이터를 불러왔습니다.', 'success');
                     } catch (error) {
                         showAlert('settingsOutput', '파일 형식이 잘못되었습니다.', 'error');

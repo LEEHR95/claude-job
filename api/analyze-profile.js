@@ -23,7 +23,9 @@ ${resumeText}
 {
   "position": "지원(희망) 직무. 명확하지 않으면 가장 가능성 높은 직무를 추정",
   "experience": "총 경력 연수를 숫자 문자열로. 예: \\"3\\". 신입/불명확이면 \\"0\\"",
-  "skills": "기술 스택을 쉼표로 구분한 문자열. 예: \\"Python, React, SQL\\"",
+  "skills": [
+    { "name": "기술명. 예: \\"Java\\"", "detail": "정량 정보(버전·기간·규모 등). 예: \\"8/11, 약 1만 줄\\". 없으면 빈 문자열. 상/중/하 같은 주관적 표현은 쓰지 말 것" }
+  ],
   "projects": "주요 프로젝트와 역할·성과를 2~4줄로 요약 (projectCards를 못 만들 때의 대비용)",
   "projectCards": [
     {
@@ -38,6 +40,10 @@ ${resumeText}
     }
   ],
   "strengths": "직무 관련 강점을 2~3줄로 요약",
+  "education": ["학력·교육 이력. 국비/학원 과정은 핵심만 담백하게(예: \\"웹 개발자 과정(백엔드/프론트엔드) 6개월\\"). 없으면 빈 배열"],
+  "certifications": ["자격증 항목. 없으면 빈 배열"],
+  "awards": ["수상·대외활동 항목. 없으면 빈 배열"],
+  "links": ["GitHub/블로그/포트폴리오 링크. 가능하면 \\"설명 | URL\\" 형태로. 없으면 빈 배열"],
   "confidence": 0~100 사이 정수. 이력서에서 정보를 얼마나 확실하게 추출했는지,
   "uncertain": ["확실하지 않아 사용자 확인이 필요한 항목들. position/experience/skills/projects/strengths 중에서만 선택"],
   "evidence": {
@@ -109,14 +115,40 @@ function parseProfileJson(raw) {
   return {
     position: String(parsed.position || '').trim(),
     experience: String(parsed.experience || '').replace(/[^0-9]/g, '') || '0',
-    skills: String(parsed.skills || '').trim(),
+    skills: sanitizeSkills(parsed.skills),
     projects: String(parsed.projects || '').trim(),
     projectCards: sanitizeCards(parsed.projectCards),
     strengths: String(parsed.strengths || '').trim(),
+    education: toStrArray(parsed.education),
+    certifications: toStrArray(parsed.certifications),
+    awards: toStrArray(parsed.awards),
+    links: toStrArray(parsed.links),
     confidence,
     uncertain,
     evidence,
   };
+}
+
+// 기술 스택을 [{name, detail}] 배열로 안전 변환 (문자열/객체 혼용 수용)
+function sanitizeSkills(v) {
+  const str = (x) => String(x == null ? '' : x).trim();
+  let items = [];
+  if (Array.isArray(v)) {
+    items = v.map((s) => (s && typeof s === 'object')
+      ? { name: str(s.name), detail: str(s.detail || s.level) }
+      : { name: str(s), detail: '' });
+  } else {
+    items = str(v).split(/\r?\n|,/).map((x) => ({ name: str(x), detail: '' }));
+  }
+  return items.filter((s) => s.name);
+}
+
+// 문자열 배열로 안전 변환 (문자열이면 줄/쉼표 분리)
+function toStrArray(v) {
+  if (Array.isArray(v)) return v.map((x) => String(x == null ? '' : x).trim()).filter(Boolean);
+  const s = String(v == null ? '' : v).trim();
+  if (!s) return [];
+  return s.split(/\r?\n|,/).map((x) => x.trim()).filter(Boolean);
 }
 
 // AI가 추출한 프로젝트 카드를 안전하게 정리
