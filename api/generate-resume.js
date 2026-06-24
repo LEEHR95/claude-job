@@ -1,12 +1,14 @@
 import { profileBlock, sendError, runEnsemble } from './_upstage.js';
-import { RESUME_GUIDE } from './_writing-rules.js';
+import { RESUME_GUIDE, factsBlock, FACT_RULE } from './_writing-rules.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { profile = {}, jobTitle = '', additionalInfo = '' } = req.body || {};
+  const { profile = {}, jobTitle = '', additionalInfo = '', facts = [] } = req.body || {};
+
+  const factSection = `${factsBlock(facts)}\n${FACT_RULE}`;
 
   const refBlock = profile.refResume
     ? `\n[지원자의 기존 이력서 — 구성·문체 참고용]
@@ -38,18 +40,23 @@ ${additionalInfo ? `추가 정보: ${additionalInfo}` : ''}`;
     `당신은 한국 채용 이력서 작성 전문가입니다. 다음 정보를 바탕으로 한국어 이력서를 작성해주세요.
 ${RESUME_GUIDE}
 
+${factSection}
+
 ${base}
 
-${a.focus} 이력서 초안을 작성하세요. 위 작성 규칙을 반드시 지키세요.
+${a.focus} 이력서 초안을 작성하세요. 위 작성 규칙과 수치 사용 규칙을 반드시 지키세요.
 ${rules}`;
 
   const mergePrompt = (drafts) =>
     `당신은 이력서 편집 전문가입니다.
 ${RESUME_GUIDE}
 
+${factSection}
+
 아래는 같은 지원자의 이력서 초안 ${drafts.length}개입니다. 각각 강조점이 다릅니다.
 각 초안에서 가장 강력한 표현·성과·구성을 골라 하나의 완성된 이력서로 통합하세요.
 위 작성 규칙을 기준으로 규칙에 어긋나는 표현('상/중/하' 수준 표기, 수치 없는 기술 나열, 링크만 나열 등)은 고치세요.
+검증된 사실 목록에 없는 수치는 정성적 표현으로 바꾸세요.
 중복은 제거하고 구성을 매끄럽게 다듬되, 지원자의 말투와 자주 쓰는 단어는 유지하세요.
 마크다운 기호 없이 일반 텍스트로만 출력하세요.
 

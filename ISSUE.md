@@ -29,3 +29,6 @@
 | 2026-06-24 | 자소서·이력서 작성 규칙화(남궁성 강사 가이드) | api/_writing-rules.js → 생성 프롬프트 주입 |
 | 2026-06-24 | [P2] 프로필 병합 업로드 + 교육/자격증/수상/링크 섹션 | 합집합 누적 병합 + 4개 섹션, AI 추출·profileBlock 확장 |
 | 2026-06-24 | 스킬 레벨 배열화 | skills→[{name,detail}] 정량 보조설명(상/중/하 대신), 구버전 자동변환 |
+| 2026-06-24 | 사실 검증(Fact-Checking) 기능 | Fact Store(검증수치) + 생성 프롬프트 주입(할루시네이션 방지) + 클라 숫자검증기(하이라이트·리포트·Fact추가) |
+| 2026-06-24 | OCR 공고 깨진 첫줄이 '지원 직무'에 자동입력 | jobTitleFromPosting 노이즈줄 스킵(의미글자 비율), 마땅한 줄 없으면 빈값 |
+| 2026-06-24 | Vercel 배포 실패: framework "static" 무효값 | vercel.json framework: "static"→null |

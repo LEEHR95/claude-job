@@ -289,6 +289,37 @@
         }
         .skill-tag.matched { background: #388e3c; }
 
+        /* 사실 검증(Fact-Check) 하이라이트 */
+        mark.fc-ok { background: #c8e6c9; color: #1b5e20; padding: 0 2px; border-radius: 3px; }
+        mark.fc-bad { background: #ffcdd2; color: #b71c1c; font-weight: 700; padding: 0 2px; border-radius: 3px; }
+        .fc-report {
+            margin-top: 14px; border: 1px solid #e6e2d6; border-radius: 10px;
+            padding: 14px 16px; background: #faf7f0; font-size: 14px;
+        }
+        .fc-report .fc-title { font-weight: 700; margin-bottom: 8px; }
+        .fc-report.ok { background: #e8f5e9; border-color: #a5d6a7; }
+        .fc-report .fc-item {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            padding: 6px 0; border-top: 1px dashed #e0ddd2;
+        }
+        .fc-report .fc-item:first-of-type { border-top: none; }
+
+        /* Fact Store 섹션 */
+        .fact-store { margin-top: 30px; padding-top: 20px; border-top: 2px solid #f0eee6; }
+        .fact-item {
+            display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;
+            background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;
+        }
+        .fact-item .fact-main { font-size: 14px; }
+        .fact-item .fact-val { font-weight: 700; color: #2e7d32; }
+        .fact-item.unverified .fact-val { color: #e65100; }
+        .fact-add-row { display: grid; grid-template-columns: 2fr 1fr 1fr 2fr auto; gap: 8px; align-items: end; margin-top: 10px; }
+        .fact-add-row .form-group { margin-bottom: 0; }
+        @media (max-width: 768px) {
+            .fact-add-row { grid-template-columns: 1fr 1fr; }
+            .fact-item { grid-template-columns: 1fr; }
+        }
+
         @media (max-width: 768px) {
             .form-row { grid-template-columns: 1fr; }
             header h1 { font-size: 24px; }
@@ -496,6 +527,22 @@
 
             <!-- 읽기 전용 보기 화면: 저장 후 표시 -->
             <div id="profileView" style="display:none;"></div>
+
+            <!-- 검증된 성과·수치 (Fact Store) -->
+            <div class="fact-store">
+                <h3 style="margin:0 0 6px; color:#444; font-size:16px;">검증된 성과·수치</h3>
+                <p style="color:#666; font-size:13px; margin:0 0 14px;">근거 있는 실제 수치만 등록하세요. 자소서·이력서 생성 시 AI가 이 값만 사용하고, 생성 결과의 숫자를 이 목록과 자동 대조합니다.</p>
+
+                <div id="factList"></div>
+
+                <div class="fact-add-row">
+                    <div class="form-group"><label>설명</label><input type="text" id="fact-label" placeholder="예: 재료 데이터 구축"></div>
+                    <div class="form-group"><label>수치</label><input type="number" id="fact-value" placeholder="예: 3800" step="any"></div>
+                    <div class="form-group"><label>단위</label><input type="text" id="fact-unit" placeholder="예: 건"></div>
+                    <div class="form-group"><label>출처·맥락 <span class="optional-tag">선택</span></label><input type="text" id="fact-note" placeholder="예: DB 직접 수집"></div>
+                    <div class="form-group"><button type="button" class="button" onclick="addFact()">추가</button></div>
+                </div>
+            </div>
         </div>
 
         <!-- 공고 분석 탭 -->
@@ -1718,7 +1765,9 @@
                     const coverTa = document.getElementById('coverPosting');
                     if (coverTa) { coverTa.value = jobPosting; renderJobMatches(jobPosting, 'coverMatchOutput'); }
                     const jt = document.getElementById('jobTitle');
-                    if (jt && !jt.value.trim()) jt.value = jobTitleFromPosting(jobPosting);
+                    const autoTitle = jobTitleFromPosting(jobPosting);
+                    // 의미 있는 제목을 뽑았을 때만 채움 (OCR 깨진 글자 자동입력 방지)
+                    if (jt && !jt.value.trim() && autoTitle) jt.value = autoTitle;
                     showToast('분석 완료 · 자소서·이력서 탭에 공고를 채워 두었어요.', 'success');
                 },
             });
@@ -1734,7 +1783,7 @@
 
             await generateEnsemble({
                 endpoint: ENDPOINTS.cover,
-                payload: { profile, jobPosting },
+                payload: { profile, jobPosting, facts: getVerifiedFacts() },
                 alertId: 'coverAlert',
                 outputId: 'coverOutput',
                 loadingMsg: '관점이 다른 초안 3개를 만들고 병합하는 중입니다... (조금 걸려요)',
@@ -1758,6 +1807,7 @@
                     profile,
                     jobTitle: document.getElementById('jobTitle').value,
                     additionalInfo: document.getElementById('additionalInfo').value,
+                    facts: getVerifiedFacts(),
                 },
                 alertId: 'resumeAlert',
                 outputId: 'resumeOutput',
@@ -1849,10 +1899,14 @@
                     <button class="button secondary" onclick="downloadText('${filePrefix}_${Date.now()}.txt', document.getElementById('${mergedId}').innerText)">다운로드</button>
                     <button class="button secondary" onclick="${regen}(true)">다시 생성</button>
                 </div>
+                <div id="${outputId}_fcreport" class="fc-report"></div>
                 <details style="margin-top:22px;">
                     <summary style="cursor:pointer; color:#667eea; font-weight:500;">초안 3개 따로 보기</summary>
                     ${draftsHtml}
                 </details>`;
+
+            // 생성 직후 숫자 자동 검증 (본문 하이라이트 + 리포트)
+            runFactCheck(outputId, merged);
         }
 
         // ── 지원 이력 저장 (localStorage['goHistory'] = [{id, ts, type, profileLabel, title, content, drafts}]) ──
@@ -1860,12 +1914,16 @@
         const HISTORY_MAX = 50;
 
         // 공고 본문에서 제목 추출 (첫 줄, 없으면 앞 30자)
+        // 공고 본문에서 제목 추출. OCR 노이즈(깨진 글자) 줄은 건너뛰고
+        // 의미 있는 첫 줄을 고른다. 마땅한 줄이 없으면 빈 문자열 반환.
         function jobTitleFromPosting(text) {
-            const t = String(text || '').trim();
-            if (!t) return '제목 없음';
-            const firstLine = t.split('\n').map(s => s.trim()).find(s => s.length);
-            const title = (firstLine || t).slice(0, 40);
-            return title || '제목 없음';
+            const lines = String(text || '').split('\n').map(s => s.trim()).filter(Boolean);
+            if (!lines.length) return '';
+            const meaningful = s => (s.match(/[가-힣A-Za-z0-9]/g) || []).length;   // 한글 음절·영숫자만
+            const nonSpace = s => s.replace(/\s/g, '').length;
+            // 의미있는 글자 4개 이상 + 노이즈(특수문자/자모) 비율이 낮은 첫 줄
+            const good = lines.find(s => meaningful(s) >= 4 && meaningful(s) / Math.max(1, nonSpace(s)) >= 0.6);
+            return (good || '').slice(0, 40);
         }
 
         function loadHistory() {
@@ -1969,6 +2027,145 @@
             if (h) downloadText(`${h.type}_${h.id}.txt`, h.content);
         }
 
+        // ══════════════ 사실 검증 (Fact-Checking) ══════════════
+        // Fact Store: localStorage['factStore'] = [{id,label,value,unit,verified,note}]
+        function loadFactStore() {
+            try { return JSON.parse(localStorage.getItem('factStore') || '[]'); } catch { return []; }
+        }
+        function saveFactStore(list) {
+            localStorage.setItem('factStore', JSON.stringify(list));
+        }
+        function getVerifiedFacts() {
+            return loadFactStore().filter(f => f.verified);
+        }
+
+        function addFact() {
+            const label = document.getElementById('fact-label').value.trim();
+            const valueRaw = document.getElementById('fact-value').value.trim();
+            const unit = document.getElementById('fact-unit').value.trim();
+            const note = document.getElementById('fact-note').value.trim();
+            if (!label) return showToast('설명을 입력해 주세요.', 'warning');
+            if (valueRaw === '' || isNaN(Number(valueRaw))) return showToast('수치(숫자)를 입력해 주세요.', 'warning');
+            const list = loadFactStore();
+            list.push({ id: 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), label, value: Number(valueRaw), unit, verified: true, note });
+            saveFactStore(list);
+            ['fact-label', 'fact-value', 'fact-unit', 'fact-note'].forEach(id => document.getElementById(id).value = '');
+            renderFactList();
+        }
+        function deleteFact(id) {
+            saveFactStore(loadFactStore().filter(f => f.id !== id));
+            renderFactList();
+        }
+        function toggleFactVerified(id) {
+            const list = loadFactStore();
+            const f = list.find(x => x.id === id);
+            if (f) { f.verified = !f.verified; saveFactStore(list); renderFactList(); }
+        }
+        function renderFactList() {
+            const el = document.getElementById('factList');
+            if (!el) return;
+            const list = loadFactStore();
+            if (!list.length) {
+                el.innerHTML = '<p style="color:#999; font-size:13px; margin:0 0 8px;">아직 등록된 수치가 없습니다. 아래에서 추가하세요.</p>';
+                return;
+            }
+            el.innerHTML = list.map(f => `
+                <div class="fact-item ${f.verified ? '' : 'unverified'}">
+                    <div class="fact-main">
+                        <span class="fact-val">${escapeHtml(String(f.value))}${escapeHtml(f.unit || '')}</span>
+                        · ${escapeHtml(f.label)}
+                        ${f.note ? `<span style="color:#999; font-size:12px;"> — ${escapeHtml(f.note)}</span>` : ''}
+                    </div>
+                    <label style="font-size:12px; color:#555; white-space:nowrap;">
+                        <input type="checkbox" ${f.verified ? 'checked' : ''} onchange="toggleFactVerified('${f.id}')"> 검증됨
+                    </label>
+                    <button class="button secondary tiny" onclick="deleteFact('${f.id}')">삭제</button>
+                </div>`).join('');
+        }
+
+        // ── 숫자 검증기 (클라이언트, API 없음) ──
+        const FC_NUM_RE = /\d[\d,]*\s*(명|%|건|시간|배|개월|개|종|위|년|만|천)/g;
+        function fcTokenNum(raw) { return parseInt(String(raw).replace(/[^\d]/g, ''), 10); }
+
+        function extractNumberTokens(text) {
+            const tokens = [];
+            let m;
+            FC_NUM_RE.lastIndex = 0;
+            while ((m = FC_NUM_RE.exec(text)) !== null) {
+                tokens.push({ raw: m[0].trim(), index: m.index, num: fcTokenNum(m[0]), unit: m[1] });
+            }
+            return tokens;
+        }
+
+        // 숫자 토큰을 factStore 검증값과 대조해 본문 하이라이트 HTML 생성
+        function highlightNumbers(text, factVals) {
+            let out = '', last = 0, m;
+            FC_NUM_RE.lastIndex = 0;
+            while ((m = FC_NUM_RE.exec(text)) !== null) {
+                out += escapeHtml(text.slice(last, m.index));
+                const ok = factVals.has(fcTokenNum(m[0]));
+                out += `<mark class="fc-${ok ? 'ok' : 'bad'}">${escapeHtml(m[0])}</mark>`;
+                last = m.index + m[0].length;
+            }
+            out += escapeHtml(text.slice(last));
+            return out;
+        }
+
+        // 생성 직후 검증 실행: 본문 하이라이트 + 리포트
+        const _fcText = {};
+        function runFactCheck(outputId, text) {
+            _fcText[outputId] = text;
+            const factVals = new Set(getVerifiedFacts().map(f => Number(f.value)));
+            const box = document.getElementById(outputId + '_merged');
+            if (box) box.innerHTML = highlightNumbers(text, factVals);
+
+            const tokens = extractNumberTokens(text);
+            // 미검증 토큰(중복 raw 제거)
+            const unverified = [];
+            const seen = new Set();
+            tokens.forEach(t => {
+                if (factVals.has(t.num)) return;
+                if (seen.has(t.raw)) return;
+                seen.add(t.raw);
+                unverified.push(t);
+            });
+
+            const report = document.getElementById(outputId + '_fcreport');
+            if (!report) return;
+            if (!tokens.length) {
+                report.className = 'fc-report';
+                report.innerHTML = '<div class="fc-title">검증 리포트</div><div style="color:#777; font-size:13px;">본문에서 수치를 찾지 못했습니다.</div>';
+                return;
+            }
+            if (!unverified.length) {
+                report.className = 'fc-report ok';
+                report.innerHTML = '<div class="fc-title" style="color:#2e7d32;">모든 수치가 검증되었습니다 ✅</div>';
+                return;
+            }
+            report.className = 'fc-report';
+            report.innerHTML = `
+                <div class="fc-title" style="color:#b71c1c;">미검증 수치 ${unverified.length}개 ⚠️</div>
+                <div style="color:#777; font-size:12px; margin-bottom:8px;">Fact Store에 근거가 없는 숫자입니다. 실제 맞는 값이면 추가하고, 아니면 본문을 수정하세요.</div>
+                ${unverified.map(t => `
+                    <div class="fc-item">
+                        <span><strong style="color:#b71c1c;">${escapeHtml(t.raw)}</strong> — Fact Store에 근거 없음</span>
+                        <button class="button secondary tiny" onclick="addFactFromToken('${outputId}', ${t.num}, '${escapeAttr(t.unit)}')">Fact Store에 추가</button>
+                    </div>`).join('')}`;
+        }
+
+        // 미검증 숫자를 Fact Store에 바로 등록 후 재검증
+        function addFactFromToken(outputId, num, unit) {
+            const label = (prompt(`"${num}${unit}"의 설명(무엇에 대한 수치인지)을 입력하세요.`) || '').trim();
+            if (!label) return;
+            const note = (prompt('출처·맥락 (선택, 비워도 됨):') || '').trim();
+            const list = loadFactStore();
+            list.push({ id: 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), label, value: Number(num), unit, verified: true, note });
+            saveFactStore(list);
+            renderFactList();
+            if (_fcText[outputId] !== undefined) runFactCheck(outputId, _fcText[outputId]);
+            showToast('검증된 수치로 추가했습니다.', 'success');
+        }
+
         // 가운데 로딩 애니메이션
         function showLoading(message) {
             hideLoading();
@@ -2038,6 +2235,7 @@
             const data = {
                 goData: localStorage.getItem('goData'),
                 goHistory: localStorage.getItem('goHistory'),
+                factStore: localStorage.getItem('factStore'),
                 exportDate: new Date().toISOString(),
             };
             downloadText('go_data.json', JSON.stringify(data, null, 2));
@@ -2065,9 +2263,11 @@
                             loadData();
                         }
                         if (data.goHistory) localStorage.setItem('goHistory', data.goHistory);
+                        if (data.factStore) localStorage.setItem('factStore', data.factStore);
                         renderProfileSwitcher();
                         showManualEntry();
                         renderHistory();
+                        renderFactList();
                         showAlert('settingsOutput', '데이터를 불러왔습니다.', 'success');
                     } catch (error) {
                         showAlert('settingsOutput', '파일 형식이 잘못되었습니다.', 'error');
@@ -2090,6 +2290,7 @@
         window.addEventListener('load', () => {
             loadData();            // 구버전 'profile' → 'goData' 마이그레이션 수행
             renderProfileSwitcher();
+            renderFactList();      // 검증된 성과·수치 목록 복원
             const p = getProfile();
             if (p.position) {
                 // 이미 내용이 있는 활성 직무 → 읽기 전용 보기 화면
