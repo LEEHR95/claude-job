@@ -75,6 +75,46 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
             max-height: calc(100vh - 40px);
             overflow-y: auto;
+            scrollbar-width: thin;                       /* Firefox */
+            scrollbar-color: #7b7fe0 transparent;
+        }
+        /* 모던 슬림 스크롤바 — thumb만 그라데이션 (Chrome/Edge/Safari) */
+        .container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .container::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            border: 2px solid transparent;
+            background-clip: padding-box;                /* 얇고 떠 보이게 */
+        }
+        .container::-webkit-scrollbar-thumb:hover {
+            border-width: 1px;                           /* 호버 시 살짝 굵게 */
+        }
+
+        /* 본문 카드 상단 얇은 헤더 (모든 탭 공통) */
+        .content-header {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px 12px 0 0;
+            padding: 16px 40px;
+        }
+        .content-header h1 {
+            font-size: 18px;
+            color: #fff;
+        }
+        .content-header p {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.85);
+            margin-top: 3px;
+        }
+        @media (max-width: 768px) {
+            .content-header { padding: 14px 20px; }
         }
 
         .tab-button {
@@ -484,6 +524,11 @@
         </aside>
 
         <div class="container" id="contentCard">
+
+        <div class="content-header">
+            <h1>GO 취업</h1>
+            <p>채용공고를 분석하고 당신의 경험을 연결해 지원 전략을 제안합니다</p>
+        </div>
 
         <!-- 프로필 탭 -->
         <div id="profile" class="tab-content active">
