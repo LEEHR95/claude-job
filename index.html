@@ -331,6 +331,34 @@
             padding: 2px 8px; border-radius: 10px; margin-left: 6px; vertical-align: middle;
         }
         .skill-tag.matched { background: #388e3c; }
+        .skill-tag.missing { background: #fff; color: #e65100; border: 1px solid #ffcc80; }
+
+        /* 적합도(매칭 품질) 패널 */
+        .fit-box { margin-bottom: 12px; }
+        .fit-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+        .fit-pct { font-size: 26px; font-weight: 800; }
+        .fit-pct.high { color: #2e7d32; }
+        .fit-pct.mid { color: #ef6c00; }
+        .fit-pct.low { color: #c62828; }
+        .fit-label { font-size: 13px; color: #666; }
+        .fit-bar { height: 8px; border-radius: 6px; background: #e6e2d6; overflow: hidden; }
+        .fit-bar > span { display: block; height: 100%; border-radius: 6px; transition: width 0.4s ease; }
+        .fit-bar > span.high { background: #43a047; }
+        .fit-bar > span.mid { background: #fb8c00; }
+        .fit-bar > span.low { background: #e53935; }
+        .fit-sub { font-size: 13px; color: #555; margin: 12px 0 6px; font-weight: 600; }
+        .fit-empty { color: #999; font-size: 13px; margin: 0; }
+
+        /* 지원 이력 그룹 카드 */
+        .hist-group { border: 1px solid #e6e2d6; border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; background: #fff; }
+        .hist-group-head { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 4px; }
+        .hist-group-title { font-weight: 700; font-size: 15px; }
+        .hist-row { border-top: 1px solid #f0f0f0; padding: 10px 0 4px; }
+        .hist-row:first-of-type { border-top: none; }
+        .hist-badge { color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 10px; }
+        .hist-badge.analysis { background: #5c6bc0; }
+        .hist-badge.cover { background: #26a69a; }
+        .hist-badge.resume { background: #ab47bc; }
 
         /* 사실 검증(Fact-Check) 하이라이트 */
         mark.fc-ok { background: #c8e6c9; color: #1b5e20; padding: 0 2px; border-radius: 3px; }
@@ -640,7 +668,10 @@
                 <textarea id="jobPosting" placeholder="채용 공고 전체 내용을 여기에 붙여넣으세요. (또는 위에서 URL로 불러오기)" style="min-height: 150px;"></textarea>
             </div>
 
-            <button class="button" onclick="analyzePosting()">분석</button>
+            <div class="button-group">
+                <button class="button" onclick="analyzePosting()">분석</button>
+                <button class="button secondary" onclick="resetAnalysis()">새 공고 / 초기화</button>
+            </div>
 
             <div id="matchOutput" style="margin-top:18px;"></div>
             <div id="analysisOutput"></div>
@@ -1556,6 +1587,72 @@
             saveActiveProfile(p);
         }
 
+        // ── 적합도(매칭 품질): 공고가 요구하는 키워드 중 내가 가진 비율 + 빠진 키워드 ──
+        // 빠진 키워드를 잡아내기 위한 일반 채용 키워드 사전 (내 프로필 용어와 합집합으로 사용)
+        const COMMON_JD_KEYWORDS = [
+            // 개발/기술
+            'java','python','javascript','typescript','react','vue','angular','node','nodejs','spring','django','flask',
+            'kotlin','swift','go','rust','php','c++','c#','sql','mysql','postgresql','oracle','mongodb','redis',
+            'aws','gcp','azure','docker','kubernetes','git','linux','rest','graphql','kafka','elasticsearch',
+            'html','css','figma','jira','confluence','데이터','데이터분석','머신러닝','ai','etl','ci/cd','msa','api',
+            // 직무/소프트
+            '기획','서비스기획','프로덕트','pm','po','ux','ui','마케팅','퍼블리싱','운영','cs','영업','디자인',
+            '프로젝트관리','일정관리','커뮤니케이션','협업','리더십','문제해결','문서화','지표','kpi','a/b테스트',
+            '와이어프레임','요구사항','프로세스','분석','전략','성과','고객','품질','테스트','자동화','보안','성능',
+        ];
+
+        // 내가 보유한 용어(스킬명 + 모든 프로젝트 태그/기술 + 직무)
+        function getMyTerms() {
+            const p = getProfile();
+            const terms = [];
+            parseSkills(p.skills).forEach(s => { if (s.name) terms.push(s.name); });
+            getCards().forEach(c => {
+                [...(c.tags || []), ...(c.techStack || [])].forEach(t => t && terms.push(t));
+            });
+            if (p.position) String(p.position).split(/[\/,·]/).forEach(t => t.trim() && terms.push(t.trim()));
+            const set = new Set();
+            terms.forEach(t => { const k = String(t).trim().toLowerCase(); if (k.length >= 2) set.add(k); });
+            return set;
+        }
+
+        function analyzeJobFit(jobText) {
+            const text = String(jobText || '').toLowerCase();
+            if (!text.trim()) return null;
+            const mine = getMyTerms();
+            const vocab = new Set([...mine, ...COMMON_JD_KEYWORDS.map(k => k.toLowerCase())]);
+            const matched = [], missing = [], seen = new Set();
+            vocab.forEach(term => {
+                if (!text.includes(term) || seen.has(term)) return;
+                seen.add(term);
+                (mine.has(term) ? matched : missing).push(term);
+            });
+            const total = matched.length + missing.length;
+            const score = total ? Math.round((matched.length / total) * 100) : 0;
+            return { score, matched, missing, total };
+        }
+
+        function fitTier(score) { return score >= 70 ? 'high' : score >= 40 ? 'mid' : 'low'; }
+
+        function fitPanelHtml(jobText) {
+            const fit = analyzeJobFit(jobText);
+            if (!fit || !fit.total) return '';
+            const tier = fitTier(fit.score);
+            const matchedTags = fit.matched.slice(0, 20).map(t => `<span class="skill-tag matched">${escapeHtml(t)}</span>`).join('');
+            const missingTags = fit.missing.slice(0, 15).map(t => `<span class="skill-tag missing">${escapeHtml(t)}</span>`).join('');
+            return `<div class="fit-box">
+                <div class="fit-head">
+                    <span class="fit-pct ${tier}">${fit.score}%</span>
+                    <span class="fit-label">적합도 · 공고 키워드 ${fit.total}개 중 ${fit.matched.length}개 보유</span>
+                </div>
+                <div class="fit-bar"><span class="${tier}" style="width:${fit.score}%"></span></div>
+                ${matchedTags ? `<div class="fit-sub">내가 가진 키워드</div><div>${matchedTags}</div>` : ''}
+                ${missingTags
+                    ? `<div class="fit-sub" style="color:#e65100;">공고엔 있지만 내 프로필에 없는 키워드</div><div>${missingTags}</div>
+                       <p class="fit-empty" style="margin-top:6px;">위 키워드 중 실제 경험이 있다면 프로필·프로젝트에 추가하면 적합도가 올라갑니다.</p>`
+                    : `<p class="fit-empty" style="margin-top:8px;">공고가 요구하는 키워드를 모두 보유하고 있습니다.</p>`}
+            </div>`;
+        }
+
         // ── 공고 ↔ 내 프로젝트 매칭 (클라이언트, tags/techStack 기반) ──
         function matchProjectsToJob(jobText) {
             const text = String(jobText || '').toLowerCase();
@@ -1578,23 +1675,23 @@
         function renderJobMatches(jobText, targetId = 'matchOutput') {
             const el = document.getElementById(targetId);
             if (!el) return;
-            if (!getCards().length) { el.innerHTML = ''; return; }
+            const fitHtml = fitPanelHtml(jobText);
+            if (!getCards().length) { el.innerHTML = fitHtml; return; }
             const matches = matchProjectsToJob(jobText);
-            if (!matches.length) {
-                el.innerHTML = `<div class="match-panel"><div class="match-title">이 공고와 맞는 내 프로젝트</div><p style="color:#999;font-size:13px;margin:0;">매칭되는 태그·기술이 없습니다. 프로필 탭에서 각 프로젝트에 '매칭 태그'를 넣으면 추천이 좋아집니다.</p></div>`;
-                return;
-            }
-            const top = matches.slice(0, 5);
-            el.innerHTML = `<div class="match-panel">
-                <div class="match-title">이 공고와 맞는 내 프로젝트 <span style="color:#999;font-weight:400;font-size:12px;">상위 ${top.length}개</span></div>
+            const projHtml = !matches.length
+                ? `<div class="match-title">이 공고와 맞는 내 프로젝트</div><p style="color:#999;font-size:13px;margin:0;">매칭되는 태그·기술이 없습니다. 프로필 탭에서 각 프로젝트에 '매칭 태그'를 넣으면 추천이 좋아집니다.</p>`
+                : (() => {
+                    const top = matches.slice(0, 5);
+                    return `<div class="match-title">이 공고와 맞는 내 프로젝트 <span style="color:#999;font-weight:400;font-size:12px;">상위 ${top.length}개</span></div>
                 ${top.map(m => `
                     <div class="match-item">
                         <div><strong>${escapeHtml(m.card.title || '(제목없음)')}</strong><span class="match-score">일치 ${m.score}</span></div>
                         ${m.card.summary ? `<div style="color:#777;font-size:13px;margin-top:3px;">${escapeHtml(m.card.summary)}</div>` : ''}
                         <div style="margin-top:6px;">${m.matched.map(t => `<span class="skill-tag matched">${escapeHtml(t)}</span>`).join('')}</div>
                     </div>`).join('')}
-                <p style="color:#999;font-size:12px;margin:4px 0 0;">자소서·이력서에서 위 프로젝트를 우선 강조하면 적합도가 올라갑니다.</p>
-            </div>`;
+                <p style="color:#999;font-size:12px;margin:4px 0 0;">자소서·이력서에서 위 프로젝트를 우선 강조하면 적합도가 올라갑니다.</p>`;
+                })();
+            el.innerHTML = `<div class="match-panel">${fitHtml}${projHtml}</div>`;
         }
 
         function renderProjectCards() {
@@ -1752,7 +1849,8 @@
                     <div class="output-box">${escapeHtml(data.text)}</div>
                     <div style="margin-top: 15px;">
                         <button class="button secondary" onclick="copyToClipboard('${outputId}')">복사</button>
-                        <button class="button secondary" onclick="downloadText('${filePrefix}_${Date.now()}.txt', document.querySelector('#${outputId} .output-box').innerText)">다운로드</button>
+                        <button class="button secondary" onclick="downloadText('${filePrefix}_${Date.now()}.txt', document.querySelector('#${outputId} .output-box').innerText)">TXT</button>
+                        <button class="button secondary" onclick="downloadDoc('${filePrefix}_${Date.now()}.doc', document.querySelector('#${outputId} .output-box').innerText)">Word</button>
                     </div>
                 `;
                 if (historyType) {
@@ -1905,6 +2003,25 @@
             });
         }
 
+        // 새 공고 시작: 이전 공고의 입력·분석·자동전달된 값 모두 비우기
+        function resetAnalysis() {
+            const hasContent = (document.getElementById('jobPosting').value || '').trim()
+                || (document.getElementById('analysisOutput').innerHTML || '').trim();
+            if (hasContent && !confirm('현재 공고 입력과 분석 결과를 모두 비울까요? (저장된 지원 이력은 그대로 유지됩니다)')) return;
+
+            const clearVal = id => { const el = document.getElementById(id); if (el) el.value = ''; };
+            const clearHtml = id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; };
+
+            // 공고 분석 탭
+            ['jobUrl', 'jobPosting'].forEach(clearVal);
+            ['jobUrlStatus', 'jobImageStatus', 'matchOutput', 'analysisOutput', 'analysisAlert'].forEach(clearHtml);
+            // 분석에서 자동 전달되던 자소서·이력서 탭 값
+            ['coverPosting', 'jobTitle', 'additionalInfo'].forEach(clearVal);
+            ['coverMatchOutput', 'coverOutput', 'coverAlert', 'resumeOutput', 'resumeAlert'].forEach(clearHtml);
+
+            showToast('새 공고를 시작합니다. 입력을 비웠어요.', 'success');
+        }
+
         // 자기소개서 초안
         async function generateCoverLetter(force) {
             const profile = getProfile();
@@ -2028,7 +2145,8 @@
                 <div class="output-box" id="${mergedId}">${escapeHtml(merged)}</div>
                 <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
                     <button class="button secondary" onclick="copyText('${mergedId}')">복사</button>
-                    <button class="button secondary" onclick="downloadText('${filePrefix}_${Date.now()}.txt', document.getElementById('${mergedId}').innerText)">다운로드</button>
+                    <button class="button secondary" onclick="downloadText('${filePrefix}_${Date.now()}.txt', document.getElementById('${mergedId}').innerText)">TXT</button>
+                    <button class="button secondary" onclick="downloadDoc('${filePrefix}_${Date.now()}.doc', document.getElementById('${mergedId}').innerText)">Word</button>
                     <button class="button secondary" onclick="${regen}(true)">다시 생성</button>
                 </div>
                 <div id="${outputId}_fcreport" class="fc-report"></div>
@@ -2064,6 +2182,10 @@
         function saveHistory(list) {
             localStorage.setItem('goHistory', JSON.stringify(list.slice(0, HISTORY_MAX)));
         }
+        // 같은 공고의 분석·자소서·이력서를 한 묶음으로 보기 위한 키 (제목 정규화)
+        function jobKeyOf(title) {
+            return String(title || '').toLowerCase().replace(/[\s\W_]+/g, '').slice(0, 40) || '_';
+        }
         function addHistory({ type, title, content, drafts }) {
             if (!content) return;
             const profile = getProfile();
@@ -2073,6 +2195,7 @@
                 type,
                 profileLabel: profile.label || profile.position || '',
                 title: title || '제목 없음',
+                jobKey: jobKeyOf(title),
                 content,
                 drafts: Array.isArray(drafts) ? drafts : [],
             };
@@ -2114,24 +2237,51 @@
                 return;
             }
 
-            listEl.innerHTML = list.map(h => {
-                const preview = escapeHtml(String(h.content).slice(0, 120));
+            // 같은 공고(jobKey)끼리 묶기 — 최신 항목 순서 유지
+            const groups = [];
+            const idx = {};
+            list.forEach(h => {
+                const key = h.jobKey || jobKeyOf(h.title);
+                if (idx[key] === undefined) { idx[key] = groups.length; groups.push({ key, title: h.title, profileLabel: h.profileLabel, ts: h.ts, items: [] }); }
+                groups[idx[key]].items.push(h);
+            });
+
+            const ORDER = { analysis: 0, cover: 1, resume: 2 };
+            listEl.innerHTML = groups.map(g => {
+                const items = g.items.slice().sort((a, b) => (ORDER[a.type] ?? 9) - (ORDER[b.type] ?? 9));
+                const rows = items.map(h => {
+                    const preview = escapeHtml(String(h.content).slice(0, 110));
+                    return `
+                    <div class="hist-row">
+                        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:4px;">
+                            <span class="hist-badge ${h.type}">${HISTORY_TYPES[h.type] || h.type}</span>
+                            <span style="color:#aaa; font-size:12px; margin-left:auto;">${fmtDate(h.ts)}</span>
+                        </div>
+                        <div style="color:#777; font-size:13px; line-height:1.5; white-space:pre-wrap;">${preview}${String(h.content).length > 110 ? '…' : ''}</div>
+                        <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+                            <button class="button secondary tiny" onclick="viewHistory('${h.id}')">열기</button>
+                            <button class="button secondary tiny" onclick="copyHistory('${h.id}')">복사</button>
+                            <button class="button secondary tiny" onclick="downloadHistory('${h.id}','txt')">TXT</button>
+                            <button class="button secondary tiny" onclick="downloadHistory('${h.id}','doc')">Word</button>
+                            <button class="button secondary tiny" onclick="deleteHistory('${h.id}')">삭제</button>
+                        </div>
+                        <div id="hview_${h.id}" style="margin-top:10px;"></div>
+                    </div>`;
+                }).join('');
+                const kinds = items.map(h => HISTORY_TYPES[h.type] || h.type).join(' · ');
                 return `
-                <div style="border:1px solid #eee; border-radius:8px; padding:14px 16px; margin-bottom:12px; background:#fff;">
-                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:6px;">
-                        <span style="background:#667eea; color:#fff; font-size:12px; padding:2px 8px; border-radius:10px;">${HISTORY_TYPES[h.type] || h.type}</span>
-                        ${h.profileLabel ? `<span style="background:#f0eee6; color:#555; font-size:12px; padding:2px 8px; border-radius:10px;">${escapeHtml(h.profileLabel)}</span>` : ''}
-                        <span style="font-weight:600;">${escapeHtml(h.title)}</span>
-                        <span style="color:#aaa; font-size:12px; margin-left:auto;">${fmtDate(h.ts)}</span>
+                <div class="hist-group">
+                    <div class="hist-group-head">
+                        <span class="hist-group-title">${escapeHtml(g.title || '제목 없음')}</span>
+                        ${g.profileLabel ? `<span style="background:#f0eee6; color:#555; font-size:12px; padding:2px 8px; border-radius:10px;">${escapeHtml(g.profileLabel)}</span>` : ''}
+                        <span style="color:#aaa; font-size:12px; margin-left:auto;">${items.length}개 · ${escapeHtml(kinds)}</span>
                     </div>
-                    <div style="color:#777; font-size:13px; line-height:1.5; white-space:pre-wrap;">${preview}${String(h.content).length > 120 ? '…' : ''}</div>
-                    <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-                        <button class="button secondary" onclick="viewHistory('${h.id}')">열기</button>
-                        <button class="button secondary" onclick="copyHistory('${h.id}')">복사</button>
-                        <button class="button secondary" onclick="downloadHistory('${h.id}')">다운로드</button>
-                        <button class="button secondary" onclick="deleteHistory('${h.id}')">삭제</button>
+                    ${rows}
+                    <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap; border-top:1px dashed #eee; padding-top:10px;">
+                        <span style="font-size:12px; color:#999; align-self:center;">묶음 내보내기</span>
+                        <button class="button secondary tiny" onclick="downloadGroup('${g.key}','txt')">전체 TXT</button>
+                        <button class="button secondary tiny" onclick="downloadGroup('${g.key}','doc')">전체 Word</button>
                     </div>
-                    <div id="hview_${h.id}" style="margin-top:12px;"></div>
                 </div>`;
             }).join('');
         }
@@ -2154,9 +2304,27 @@
             const h = loadHistory().find(x => x.id === id);
             if (h) navigator.clipboard.writeText(h.content).then(() => alert('클립보드에 복사되었습니다.'));
         }
-        function downloadHistory(id) {
+        function downloadHistory(id, fmt) {
             const h = loadHistory().find(x => x.id === id);
-            if (h) downloadText(`${h.type}_${h.id}.txt`, h.content);
+            if (!h) return;
+            const base = `${HISTORY_TYPES[h.type] || h.type}_${(h.title || '제목없음').replace(/[\\/:*?"<>|]/g, '').slice(0, 20)}`;
+            if (fmt === 'doc') downloadDoc(`${base}.doc`, h.content);
+            else downloadText(`${base}.txt`, h.content);
+        }
+
+        // 한 공고 묶음(분석+자소서+이력서)을 하나의 파일로 내보내기
+        function downloadGroup(key, fmt) {
+            const items = loadHistory().filter(h => (h.jobKey || jobKeyOf(h.title)) === key);
+            if (!items.length) return;
+            const ORDER = { analysis: 0, cover: 1, resume: 2 };
+            items.sort((a, b) => (ORDER[a.type] ?? 9) - (ORDER[b.type] ?? 9));
+            const title = items[0].title || '제목없음';
+            const text = items.map(h =>
+                `===== ${HISTORY_TYPES[h.type] || h.type} (${fmtDate(h.ts)}) =====\n\n${h.content}`
+            ).join('\n\n\n');
+            const base = `지원_${title.replace(/[\\/:*?"<>|]/g, '').slice(0, 20)}`;
+            if (fmt === 'doc') downloadDoc(`${base}.doc`, text);
+            else downloadText(`${base}.txt`, text);
         }
 
         // ══════════════ 사실 검증 (Fact-Checking) ══════════════
@@ -2360,6 +2528,19 @@
             document.body.appendChild(element);
             element.click();
             document.body.removeChild(element);
+        }
+
+        // Word(.doc)로 다운로드 — 텍스트를 최소 HTML로 감싸면 Word/한글에서 바로 열림
+        function downloadDoc(filename, text) {
+            const body = escapeHtml(text).replace(/\n/g, '<br>');
+            const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"></head>`
+                + `<body style="font-family:'맑은 고딕','Malgun Gothic',sans-serif; font-size:11pt; line-height:1.6;">${body}</body></html>`;
+            const blob = new Blob(['﻿', html], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename; a.style.display = 'none';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         // 데이터 내보내기
