@@ -67,3 +67,4 @@
 | 2026-06-23 | 공고 입력 확장: URL fetch + 이미지 OCR(Upstage) | api/fetch-job.js, api/ocr-job.js | 크롤링 불가·이미지 공고 대응 |
 | 2026-06-23 | 자소서/이력서 앙상블(3초안 병합)+마크다운 제거+결과 캐시 | api/generate-*.js, api/_upstage.js, index.html | 생성 품질 안정화 |
 | 2026-06-24 | P2 완료: 지원이력 저장·UX개편(자동전달/로딩/토스트)·공고↔프로젝트 매칭·작성 규칙화·프로필 병합업로드+4섹션·스킬 배열화 | index.html, api/_writing-rules.js, api/_upstage.js, api/analyze-profile.js, api/generate-*.js | 재사용 루프 P2 마무리 |
+| 2026-06-25 | 우측 sticky 사이드바+본문 독립스크롤·지원이력 공고별 묶음·Word/묶음 내보내기·적합도(빠진 키워드)·새 공고 초기화 | index.html | UI 개편 + 매칭품질/내보내기 |
