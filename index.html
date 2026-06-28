@@ -585,6 +585,13 @@
                     <input type="number" id="experience" min="0" max="50" placeholder="예: 3">
                 </div>
 
+                <div class="form-group" id="fg-careers">
+                    <label>경력 사항 <span class="optional-tag">회사별 이력 · 카드로 관리</span></label>
+                    <div id="careerCards"></div>
+                    <div id="careerEditor" style="display:none;"></div>
+                    <button type="button" class="button secondary" onclick="addCareerCard()">+ 경력 추가</button>
+                </div>
+
                 <div class="form-group" id="fg-skills">
                     <label for="skills">기술 스택 <span class="optional-tag">한 줄에 하나씩 · 스킬명 | 정량설명</span></label>
                     <textarea id="skills" placeholder="예: Java | 8/11, 2년&#10;React | 1.5년, 프로젝트 5개&#10;SQL | 테이블 20개 설계 경험"></textarea>
@@ -627,9 +634,8 @@
                 <p style="color: #666; margin-bottom: 15px; font-size: 13px;">가지고 있는 자기소개서를 올리면, 생성 시 그 문체와 톤을 참고합니다. PDF · Word(docx) 지원.</p>
 
                 <div class="form-group">
-                    <label>기존 자기소개서</label>
-                    <input type="file" id="refCoverFile" accept=".pdf,.docx" onchange="handleDocUpload(event, 'refCover')">
-                    <div id="refCoverStatus" style="margin-top: 8px; font-size: 13px; color: #666;"></div>
+                    <input type="file" id="refCoverFile" accept=".pdf,.docx" style="display:none" onchange="handleDocUpload(event, 'refCover')">
+                    <div id="refCoverStatus" style="margin-top: 8px; font-size: 13px;"></div>
                 </div>
                 <div id="refResumeStatus" style="margin-top: 8px; font-size: 13px; color: #666;"></div>
 
@@ -930,6 +936,9 @@
                 // 프로젝트는 카드로 즉시 저장되므로 기존 값 보존 (텍스트는 카드에서 동기화됨)
                 projects: prev.projects || '',
                 projectCards: prev.projectCards || [],
+                // 경력 사항도 카드로 즉시 저장 (텍스트는 카드에서 동기화)
+                careers: prev.careers || '',
+                careerCards: prev.careerCards || [],
                 strengths: document.getElementById('strengths').value,
                 education: document.getElementById('education').value,
                 certifications: document.getElementById('certifications').value,
@@ -978,6 +987,8 @@
             clearEvidence();
             cancelProjectCard();
             renderProjectCards();
+            cancelCareerCard();
+            renderCareerCards();
         }
 
         // ── 직무별 프로필 전환 바 ──
@@ -1113,6 +1124,20 @@
                 </div>`;
             }).join('') : '<p style="color:#999;font-size:13px;">등록된 프로젝트가 없습니다.</p>';
 
+            const careers = p.careerCards || [];
+            const careersHtml = careers.length ? careers.map(c => {
+                const meta = [c.period, c.role].filter(Boolean).map(escapeHtml).join(' · ');
+                const contrib = (c.contributions || []).map(x => `<li>${escapeHtml(x)}</li>`).join('');
+                const out = (c.outcomes || []).map(x => `<li>${escapeHtml(x)}</li>`).join('');
+                return `<div class="project-card">
+                    <div class="project-card-head"><strong>${escapeHtml(c.company || '(회사명없음)')}</strong></div>
+                    ${meta ? `<div class="project-card-meta">${meta}</div>` : ''}
+                    ${c.summary ? `<div class="project-card-sum">${escapeHtml(c.summary)}</div>` : ''}
+                    ${contrib ? `<div style="margin-top:8px;font-size:13px;color:#555;"><b>담당 업무</b><ul style="margin:4px 0 0 18px;">${contrib}</ul></div>` : ''}
+                    ${out ? `<div style="margin-top:8px;font-size:13px;color:#555;"><b>성과</b><ul style="margin:4px 0 0 18px;">${out}</ul></div>` : ''}
+                </div>`;
+            }).join('') : '';
+
             const contact = [
                 p.name && `이름: ${escapeHtml(p.name)}`,
                 p.email && `이메일: ${escapeHtml(p.email)}`,
@@ -1146,6 +1171,7 @@
                     <div class="profile-info-item"><span class="profile-info-label">지원 직무</span><span class="profile-info-value">${escapeHtml(p.position || '-')}</span></div>
                     <div class="profile-info-item"><span class="profile-info-label">경력</span><span class="profile-info-value">${escapeHtml(p.experience || '-')} 년</span></div>
                 </div>
+                ${careersHtml ? `<h3 style="${h3}">경력 사항</h3>${careersHtml}` : ''}
                 <h3 style="${h3}">기술 스택</h3>
                 <div>${skills}</div>
                 <h3 style="${h3}">프로젝트</h3>
@@ -1466,6 +1492,25 @@
                 profile.projects = analysis.projects; // 카드를 못 뽑았으면 텍스트 요약 사용
             }
 
+            // 경력 사항 카드: 회사명+기간 기준 중복을 빼고 기존에 이어붙임
+            const existingCareers = profile.careerCards || [];
+            const aiCareers = Array.isArray(analysis.careerCards) ? analysis.careerCards : [];
+            if (aiCareers.length) {
+                const seenC = new Set(existingCareers.map(c => normTitle(c.company) + '|' + normTitle(c.period)));
+                const addedC = aiCareers.filter(c => {
+                    const key = normTitle(c.company) + '|' + normTitle(c.period);
+                    if (!normTitle(c.company) || seenC.has(key)) return false;
+                    seenC.add(key); return true;
+                }).map(c => ({
+                    id: genId(),
+                    company: c.company || '', period: c.period || '', role: c.role || '', summary: c.summary || '',
+                    contributions: Array.isArray(c.contributions) ? c.contributions : [],
+                    outcomes: Array.isArray(c.outcomes) ? c.outcomes : [],
+                }));
+                profile.careerCards = existingCareers.concat(addedC);
+                profile.careers = careersToText(profile.careerCards);
+            }
+
             saveActiveProfile(profile);
             renderProfileSwitcher();
 
@@ -1549,11 +1594,24 @@
             [['refCover', 'refCoverName'], ['refResume', 'refResumeName']].forEach(([field, nameField]) => {
                 const statusEl = document.getElementById(field + 'Status');
                 if (!statusEl) return;
+                // 이 문서를 폼에서 직접 교체할 수 있는 파일 입력이 있는지
+                const hasInput = !!document.getElementById(field + 'File');
+                const pick = `document.getElementById('${field}File').click()`;
                 if (p[field]) {
                     const len = p[field].length;
                     statusEl.innerHTML =
-                        `<span style="color:#388e3c;">${p[nameField] || '문서'} (${len.toLocaleString()}자)</span>
-                         <button class="button secondary" style="padding:4px 10px; font-size:12px; margin-left:8px;" onclick="removeDoc('${field}')">삭제</button>`;
+                        `<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px;">
+                            <span style="color:#2e7d32; font-weight:600;">✓ 현재 첨부됨: ${escapeHtml(p[nameField] || '문서')}</span>
+                            <span style="color:#66bb6a; font-size:12px;">(${len.toLocaleString()}자)</span>
+                            <span style="margin-left:auto; display:flex; gap:6px;">
+                                ${hasInput ? `<button class="button secondary tiny" onclick="${pick}">다른 파일로 교체</button>` : ''}
+                                <button class="button secondary tiny" onclick="removeDoc('${field}')">삭제</button>
+                            </span>
+                        </div>`;
+                } else if (hasInput) {
+                    statusEl.innerHTML =
+                        `<button class="button secondary" onclick="${pick}">자소서 첨부하기</button>
+                         <span style="color:#999; font-size:12px; margin-left:8px;">PDF · Word(docx) · 선택사항</span>`;
                 } else {
                     statusEl.innerHTML = '';
                 }
@@ -1841,12 +1899,130 @@
             renderProjectCards();
         }
 
+        // ── 경력 사항 카드 (회사별 이력) ──
+        function getCareerCards() { return getProfile().careerCards || []; }
+
+        // 경력 카드 배열 → API/요약용 텍스트
+        function careersToText(cards) {
+            if (!cards.length) return '';
+            return cards.map(c => {
+                const lines = [];
+                let head = c.company || '(회사명없음)';
+                if (c.period) head += ` (${c.period})`;
+                if (c.role) head += ` · ${c.role}`;
+                lines.push('▸ ' + head);
+                if (c.summary) lines.push('  ' + c.summary);
+                (c.contributions || []).forEach(x => lines.push('  - 담당 업무: ' + x));
+                (c.outcomes || []).forEach(x => lines.push('  - 성과: ' + x));
+                return lines.join('\n');
+            }).join('\n\n');
+        }
+
+        // 경력 카드 저장 + careers 텍스트 동기화
+        function persistCareerCards(cards) {
+            const p = getProfile();
+            p.careerCards = cards;
+            p.careers = careersToText(cards);
+            saveActiveProfile(p);
+        }
+
+        function renderCareerCards() {
+            const wrap = document.getElementById('careerCards');
+            if (!wrap) return;
+            const cards = getCareerCards();
+            if (!cards.length) {
+                wrap.innerHTML = '<p style="color:#999;font-size:13px;margin:6px 0;">아직 등록한 경력이 없습니다. 아래 버튼으로 추가하세요.</p>';
+                return;
+            }
+            wrap.innerHTML = cards.map(c => {
+                const meta = [c.period, c.role].filter(Boolean).map(escapeHtml).join(' · ');
+                return `<div class="project-card">
+                    <div class="project-card-head">
+                        <strong>${escapeHtml(c.company || '(회사명없음)')}</strong>
+                        <span>
+                            <button class="button secondary tiny" onclick="editCareerCard('${c.id}')">편집</button>
+                            <button class="button secondary tiny" onclick="deleteCareerCard('${c.id}')">삭제</button>
+                        </span>
+                    </div>
+                    ${meta ? `<div class="project-card-meta">${meta}</div>` : ''}
+                    ${c.summary ? `<div class="project-card-sum">${escapeHtml(c.summary)}</div>` : ''}
+                </div>`;
+            }).join('');
+        }
+
+        function careerEditorHtml(c) {
+            c = c || {};
+            return `<div class="project-editor-box">
+                <div class="form-group"><label>회사명</label><input id="cc-company" value="${escapeAttr(c.company)}" placeholder="예: OO 주식회사"></div>
+                <div class="form-row">
+                    <div class="form-group"><label>재직 기간</label><input id="cc-period" value="${escapeAttr(c.period)}" placeholder="예: 2022.03 ~ 2024.06"></div>
+                    <div class="form-group"><label>직책 · 담당 직무</label><input id="cc-role" value="${escapeAttr(c.role)}" placeholder="예: 서비스 기획자 / 대리"></div>
+                </div>
+                <div class="form-group"><label>한 줄 요약 <span class="optional-tag">선택 · 회사/팀 소개</span></label><input id="cc-summary" value="${escapeAttr(c.summary)}" placeholder="예: 모바일 커머스 팀, 예약 서비스 담당"></div>
+                <div class="form-group"><label>담당 업무 <span class="optional-tag">줄바꿈으로 구분</span></label><textarea id="cc-contrib" placeholder="결제 플로우 개선\n파트너 정산 프로세스 설계">${escapeHtml((c.contributions || []).join('\n'))}</textarea></div>
+                <div class="form-group"><label>성과 <span class="optional-tag">줄바꿈 구분 · 숫자 우선</span></label><textarea id="cc-outcomes" placeholder="결제 전환율 12% 상승\n정산 처리시간 50% 단축">${escapeHtml((c.outcomes || []).join('\n'))}</textarea></div>
+                <div class="button-group">
+                    <button class="button" onclick="saveCareerCard()">저장</button>
+                    <button class="button secondary" onclick="cancelCareerCard()">취소</button>
+                </div>
+            </div>`;
+        }
+
+        let _editingCareerId = null;
+        function openCareerEditor(c) {
+            const ed = document.getElementById('careerEditor');
+            ed.innerHTML = careerEditorHtml(c);
+            ed.style.display = 'block';
+        }
+        function addCareerCard() { _editingCareerId = '__new__'; openCareerEditor({}); }
+        function editCareerCard(id) {
+            const c = getCareerCards().find(x => x.id === id);
+            if (!c) return;
+            _editingCareerId = id;
+            openCareerEditor(c);
+        }
+        function cancelCareerCard() {
+            _editingCareerId = null;
+            const ed = document.getElementById('careerEditor');
+            if (ed) { ed.style.display = 'none'; ed.innerHTML = ''; }
+        }
+        function saveCareerCard() {
+            const company = (document.getElementById('cc-company').value || '').trim();
+            if (!company) { alert('회사명을 입력하세요.'); return; }
+            const card = {
+                company,
+                period: (document.getElementById('cc-period').value || '').trim(),
+                role: (document.getElementById('cc-role').value || '').trim(),
+                summary: (document.getElementById('cc-summary').value || '').trim(),
+                contributions: linesToArr('cc-contrib'),
+                outcomes: linesToArr('cc-outcomes'),
+            };
+            const cards = getCareerCards();
+            if (_editingCareerId === '__new__') {
+                card.id = genId();
+                cards.push(card);
+            } else {
+                card.id = _editingCareerId;
+                const i = cards.findIndex(x => x.id === _editingCareerId);
+                if (i >= 0) cards[i] = card; else cards.push(card);
+            }
+            persistCareerCards(cards);
+            cancelCareerCard();
+            renderCareerCards();
+        }
+        function deleteCareerCard(id) {
+            if (!confirm('이 경력을 삭제할까요?')) return;
+            persistCareerCards(getCareerCards().filter(x => x.id !== id));
+            renderCareerCards();
+        }
+
         // 프로필 초기화 (현재 직무 슬롯의 내용만 비우고 슬롯/직무명은 유지)
         function clearProfile() {
             if (confirm('현재 직무 프로필의 내용을 초기화하시겠습니까? (직무 칸은 유지됩니다)')) {
                 ['position', 'experience', 'skills', 'strengths', 'name', 'email', 'phone']
                     .forEach(id => { document.getElementById(id).value = ''; });
                 cancelProjectCard();
+                cancelCareerCard();
                 ['refCoverFile', 'refResumeFile'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.value = '';
@@ -1854,6 +2030,7 @@
                 const cur = getProfile();
                 saveActiveProfile({ id: cur.id, label: cur.label, position: '' });
                 renderProjectCards();
+                renderCareerCards();
                 document.getElementById('profileInfo').innerHTML = '';
                 document.getElementById('aiConfidenceBanner').innerHTML = '';
                 clearUncertainHighlights();

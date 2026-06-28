@@ -57,6 +57,7 @@ export function profileBlock(profile = {}) {
   return [
     `지원 직무: ${profile.position || '-'}`,
     `경력: ${profile.experience || '-'}년`,
+    profile.careers ? `경력 사항:\n${profile.careers}` : '',
     `기술 스택: ${skillsText || '-'}`,
     `프로젝트 경험: ${profile.projects || '-'}`,
     `강점: ${profile.strengths || '-'}`,

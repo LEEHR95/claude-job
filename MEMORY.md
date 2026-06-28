@@ -2,11 +2,11 @@
 
 ## 마지막 세션
 <!-- /co가 이 섹션 전체를 덮어씁니다 (다음 "##"까지) -->
-- 날짜: 2026-06-25
-- 요약(2026-06-25): UI 개편 + 매칭품질/내보내기 기능. (1)레이아웃 — 상단 가로 탭바를 우측 고정 사이드바로 전환(.layout flex-direction:row-reverse, .sidebar position:sticky top:20px, 브랜드+탭버튼+'↑ 맨 위로'). 본문카드(.container)는 max-height:calc(100vh-40px)+overflow-y:auto로 독립 스크롤. scrollCardTop()이 카드 맨위로(탭전환 시 자동), 768px↓는 사이드바 가로바+카드 일반스크롤. 기존 그라데이션 <header> 제거. (2)지원이력 공고별 묶음 — addHistory에 jobKey(제목 정규화) 추가, renderHistory를 jobKey 그룹핑으로 재작성(같은 공고의 분석·자소서·이력서를 한 hist-group 카드, 종류배지+항목별 버튼). 구이력은 jobKeyOf(title)로 자동 그룹. (3)결과 내보내기 — downloadDoc(filename,text): 텍스트를 office네임스페이스 HTML로 감싸 Blob(application/msword)+BOM으로 .doc 저장(Word/한글 바로 열림). 생성화면·이력 항목에 TXT/Word 버튼, 그룹엔 묶음(전체 TXT/Word) downloadGroup(분석+자소서+이력서 한 파일). (4)적합도(매칭품질) — analyzeJobFit(jobText): 내 용어(스킬+카드 tags/techStack+직무) ∪ COMMON_JD_KEYWORDS 사전을 공고본문과 대조 → matched/missing/score(%). fitPanelHtml을 renderJobMatches 상단에 삽입(% 막대+가진키워드/빠진키워드 칩). 클라이언트 전용, API 비용 없음. (5)새 공고 초기화 — resetAnalysis(): 공고분석 입력·결과 + 자동전달된 coverPosting/jobTitle/additionalInfo/출력 모두 비움(확인창, goHistory는 보존). 분석버튼 옆 '새 공고/초기화' 버튼.
-- 이전 요약(2026-06-24): 사실검증(Fact Store+숫자검증기), OCR 제목버그 수정(jobTitleFromPosting 의미글자 비율), Vercel 배포(framework null). P2 전체 완료 — 공고↔프로젝트 매칭, 작성규칙화(_writing-rules.js), 프로필 병합업로드+4섹션(교육/자격/수상/링크), 스킬 [{name,detail}] 배열화, 지원이력 저장(goHistory), UX(자동전달·로딩스피너·토스트).
-- 이전 요약(2026-06-23): P1 — 직무별 프로필(goData), 프로젝트 카드(projectCards[]), AI 근거표시, AI→카드 자동추출, 읽기전용 보기화면, 이모지제거+미색배경, 공고 URL fetch/이미지 OCR, 자소서/이력서 앙상블+캐시.
-- 다음 할 일: (검증) Vercel 배포본에서 ① .doc Word/한글 실제 열림 ② 적합도 키워드사전(COMMON_JD_KEYWORDS) 실공고로 정밀도 튜닝(노이즈 키워드 제거/추가) ③ jobKey 그룹핑이 제목 다른 동일공고를 분리하는 케이스 확인. (P3 남음) 사이트별 파서·지원현황 대시보드·자소서 버전관리. (배포운영) UPSTAGE_API_KEY 등록 확인, 노출 키 있으면 재발급.
+- 날짜: 2026-06-28
+- 요약(2026-06-28): 프로필 '경력 사항' 카드(회사별 이력) 신규 + 자소서 첨부 UI 개선. (1)경력 카드 — careerCards[]{id,company,period,role,summary,contributions[],outcomes[]}, 프로젝트 카드와 동일 CRUD(addCareerCard/edit/save/delete/cancel, careerEditorHtml, _editingCareerId, project-card·project-editor-box CSS 재사용). careers 텍스트 동기화(careersToText→persistCareerCards). 폼 fg-careers 섹션(경력년수 칸 아래), 보기화면 '경력 사항' 섹션(buildProfileViewHtml), saveProfile/fillProfileForm/clearProfile 연동. AI 추출 병합 — 회사명+기간 normTitle 중복제거 후 기존에 누적. api/analyze-profile.js 스키마에 careerCards 추가('어디서 일했나' vs projectCards '무엇을 만들었나', 같은 회사 프로젝트는 contributions로 묶기). api/_upstage.js profileBlock에 '경력 사항' 주입→생성 반영. 기존엔 경력=년수 숫자 한 칸뿐이라 회사별 이력 입력·표시 칸 없던 문제 해결. (2)자소서 첨부 UI — 폼 기본 file input(항상 '선택된 파일 없음' 노출) 숨김. displayDocStatus: 첨부시 초록박스 '✓ 현재 첨부됨: OO.pdf (N자)'+[다른 파일로 교체]/[삭제], 미첨부시 [자소서 첨부하기] 버튼. 교체는 hidden input.click(). 이력서 교체(replace)시 refCover/refResume는 keep목록(line~1450)으로 보존됨 확인. 생성 자소서/지원이력은 goHistory로 프로필과 별개라 무관.
+- 이전 요약(2026-06-25): UI 개편 — 상단 가로탭→우측 sticky 사이드바, 본문카드 독립스크롤, 지원이력 공고별 묶음(jobKey 그룹핑), Word/묶음 내보내기(downloadDoc .doc msword), 적합도(analyzeJobFit 빠진키워드), 새 공고 초기화(resetAnalysis).
+- 이전 요약(2026-06-24): P2 완료 — 공고↔프로젝트 매칭, 작성규칙화(_writing-rules.js), 프로필 병합업로드+4섹션, 스킬 [{name,detail}] 배열화, 지원이력 저장(goHistory), 사실검증, OCR 제목버그 수정, Vercel 배포.
+- 다음 할 일: ① Vercel 배포본에서 AI 경력 카드 추출 동작 확인(이력서 재업로드 시 careerCards 자동 생성되는지) ② (선택) 경력 카드 담당업무 키워드를 공고 적합도 매칭(getMyTerms)에 포함할지 결정 ③ 기존 검증 — .doc Word/한글 열림, 적합도 사전(COMMON_JD_KEYWORDS) 실공고 튜닝, jobKey 그룹핑. (배포운영) UPSTAGE_API_KEY 등록 확인.
 
 ## 의사결정 이력
 
@@ -29,6 +29,8 @@
 | 2026-06-25 | 탭을 우측 sticky 사이드바 + 본문카드 독립스크롤 | 사용자 요청. 페이지 중앙고정·사이드바 따라다님·맨위로 버튼 | 상단 가로탭 유지, 좌측 사이드바 |
 | 2026-06-25 | 적합도를 클라이언트 키워드사전으로 계산 | 분석 AI호출에 의존 안 하고 즉시·무비용. 내 용어∪공통JD사전으로 빠진키워드 검출 | analyze-job API가 score/missing JSON 반환(비용·응답형변경 위험) |
 | 2026-06-25 | Word 내보내기를 HTML→.doc(msword)로 | 라이브러리 없이 Word/한글에서 바로 열림. 단일 HTML 유지 | docx 생성 라이브러리 추가, PDF 변환 |
+| 2026-06-28 | 경력 사항을 projectCards와 동일한 카드 구조로 분리 | '경력=년수 숫자 한 칸'은 회사별 이력을 담지 못함. 검증된 프로젝트 카드 패턴/CSS 재사용으로 위험 최소화 | experience 한 칸 유지, 경력을 자유 텍스트 한 칸으로 |
+| 2026-06-28 | 자소서 첨부를 기본 file input→상태박스+버튼으로 | 기본 input이 항상 '선택된 파일 없음'을 노출해 첨부 여부 혼란. 첨부 강조+클릭 교체로 명확화 | 기본 input 유지, 라벨만 추가 |
 
 ## 세션 로그
 <!-- 최근 5개만 유지. 초과 시 WIKI.md "세션 아카이브"로 이동. 추가만, 수정 금지 -->
@@ -40,3 +42,4 @@
 | 2026-06-23 | 프로필 탭 UX 개편: 업로드→AI분석→검토 흐름, 드래그앤드롭 | index.html, api/analyze-profile.js |
 | 2026-06-24 | P2 전체 완료: 지원이력 저장 + UX(자동전달·로딩스피너·토스트) + 공고↔프로젝트 매칭 + 작성 규칙화 + 프로필 병합업로드/4섹션 + 스킬 배열화 | index.html, api/_writing-rules.js, api/_upstage.js, api/analyze-profile.js, api/generate-*.js |
 | 2026-06-25 | 우측 sticky 사이드바+본문 독립스크롤 + 지원이력 공고별 묶음 + Word/묶음 내보내기 + 적합도(빠진 키워드) + 새 공고 초기화 | index.html |
+| 2026-06-28 | 프로필 경력 사항 카드(회사별 이력) 신규 + 자소서 첨부 UI 개선(현재 첨부 강조/클릭 교체) | index.html, api/analyze-profile.js, api/_upstage.js |
