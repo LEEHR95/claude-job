@@ -517,8 +517,7 @@
                 <button class="tab-button" onclick="showTab('analysis', this)">공고 분석</button>
                 <button class="tab-button" onclick="showTab('cover', this)">자기소개서 초안</button>
                 <button class="tab-button" onclick="showTab('resume', this)">이력서 생성</button>
-                <button class="tab-button" onclick="showTab('status', this)">지원 현황</button>
-                <button class="tab-button" onclick="showTab('history', this)">지원 이력</button>
+                <button class="tab-button" onclick="showTab('status', this)">지원 관리</button>
                 <button class="tab-button" onclick="showTab('settings', this)">설정</button>
             </nav>
             <button class="scroll-top-btn" onclick="scrollCardTop()" title="맨 위로">↑ 맨 위로</button>
@@ -777,10 +776,10 @@
             <div id="resumeOutput"></div>
         </div>
 
-        <!-- 지원 현황 탭 -->
+        <!-- 지원 관리 탭 (지원 현황 + 지원 이력 통합) -->
         <div id="status" class="tab-content">
-            <h2>지원 현황</h2>
-            <p style="color: #666; margin-bottom: 20px;">회사별 지원 상태와 마감일, 공고 링크를 한눈에 관리합니다. 자기소개서·공고 분석을 만들면 자동으로 추가됩니다.</p>
+            <h2>지원 관리</h2>
+            <p style="color: #666; margin-bottom: 20px;">회사별로 지원 상태·마감일·공고 링크와 그 공고로 만든 문서(분석·자기소개서·이력서)를 한 카드에서 관리합니다. 제목을 누르면 펼쳐집니다.</p>
 
             <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
                 <select id="statusFilter" onchange="renderApplications()" style="padding:8px 10px; border:1px solid #ddd; border-radius:6px;">
@@ -796,25 +795,6 @@
             </div>
 
             <div id="applicationList"></div>
-        </div>
-
-        <!-- 지원 이력 탭 -->
-        <div id="history" class="tab-content">
-            <h2>지원 이력</h2>
-            <p style="color: #666; margin-bottom: 20px;">공고 분석·자기소개서·이력서 생성 결과가 자동으로 여기에 쌓입니다. 다시 열어 보거나 복사·다운로드할 수 있어요.</p>
-
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
-                <select id="historyFilter" onchange="renderHistory()" style="padding:8px 10px; border:1px solid #ddd; border-radius:6px;">
-                    <option value="">전체 유형</option>
-                    <option value="analysis">공고 분석</option>
-                    <option value="cover">자기소개서</option>
-                    <option value="resume">이력서</option>
-                </select>
-                <span id="historyCount" style="color:#999; font-size:13px;"></span>
-                <button class="button secondary" style="margin-left:auto;" onclick="clearHistory()">전체 삭제</button>
-            </div>
-
-            <div id="historyList"></div>
         </div>
 
         <!-- 설정 탭 -->
@@ -858,7 +838,6 @@
             document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
             document.getElementById(tabName).classList.add('active');
             btn.classList.add('active');
-            if (tabName === 'history') renderHistory();
             if (tabName === 'status') renderApplications();
             scrollCardTop();
         }
@@ -1693,6 +1672,8 @@
 
         // ── 프로젝트 카드 ──
         function escapeAttr(s) { return escapeHtml(s || '').replace(/"/g, '&quot;'); }
+        // onclick="fn('...')"의 작은따옴표 문자열 인자용 (따옴표·역슬래시·줄바꿈 처리)
+        function escapeJsAttr(s) { return String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/[\n\r]/g, ' '); }
         function getCards() { return getProfile().projectCards || []; }
 
         // 카드 배열 → API/요약용 텍스트
@@ -2119,10 +2100,11 @@
                 showToast(successMsg, 'success');
                 document.getElementById(outputId).innerHTML = `
                     <div class="output-box">${escapeHtml(data.text)}</div>
-                    <div style="margin-top: 15px;">
+                    <div style="margin-top: 15px; display:flex; gap:10px; flex-wrap:wrap;">
                         <button class="button secondary" onclick="copyToClipboard('${outputId}')">복사</button>
                         <button class="button secondary" onclick="downloadText('${jobFileBase(historyType, historyTitle)}.txt', document.querySelector('#${outputId} .output-box').innerText)">TXT</button>
                         <button class="button secondary" onclick="downloadDoc('${jobFileBase(historyType, historyTitle)}.doc', document.querySelector('#${outputId} .output-box').innerText)">Word</button>
+                        ${historyTitle ? `<button class="button secondary" onclick="addToApplications('${escapeJsAttr(historyTitle)}')">📋 지원 관리에서 열기</button>` : ''}
                     </div>
                 `;
                 if (historyType) {
@@ -2511,6 +2493,7 @@
                     <button class="button secondary" onclick="copyText('${mergedId}')">복사</button>
                     <button class="button secondary" onclick="downloadText('${jobFileBase(historyType, historyTitle)}.txt', document.getElementById('${mergedId}').innerText)">TXT</button>
                     <button class="button secondary" onclick="downloadDoc('${jobFileBase(historyType, historyTitle)}.doc', document.getElementById('${mergedId}').innerText)">Word</button>
+                    ${historyTitle && historyTitle !== '제목 없음' ? `<button class="button secondary" onclick="addToApplications('${escapeJsAttr(historyTitle)}')">📋 지원 관리에서 열기</button>` : ''}
                     <button class="button secondary" onclick="${regen}(true)">다시 생성</button>
                 </div>
                 <div id="${outputId}_fcreport" class="fc-report"></div>
@@ -2599,12 +2582,19 @@
             renderApplications();
             showToast('저장되었습니다.', 'success');
         }
+        // 문서만 있고 앱 엔트리가 없는 공고를 처음 편집할 때 엔트리 생성(제목은 입력칸에서 가져옴)
+        function touchApp(key) {
+            if (getApp(key)) return;
+            const el = document.getElementById('apptitle_' + key);
+            ensureAppForJob(key, (el && el.value) || '');
+        }
         // 인라인 편집 핸들러 (재렌더하지 않음 — 펼친 카드 유지)
-        function setAppTitle(key, val) { upsertApp(key, { title: val }); }
-        function setAppStatus(key, val) { upsertApp(key, { status: val }); }
-        function setAppDeadline(key, val) { upsertApp(key, { deadline: val }); }
-        function setAppNote(key, val) { upsertApp(key, { note: val }); }
+        function setAppTitle(key, val) { touchApp(key); upsertApp(key, { title: val }); }
+        function setAppStatus(key, val) { touchApp(key); upsertApp(key, { status: val }); }
+        function setAppDeadline(key, val) { touchApp(key); upsertApp(key, { deadline: val }); }
+        function setAppNote(key, val) { touchApp(key); upsertApp(key, { note: val }); }
         function setAppLink(key, i, field, val) {
+            touchApp(key);
             const app = getApp(key); if (!app) return;
             const links = (app.links || []).slice();
             if (!links[i]) return;
@@ -2627,6 +2617,7 @@
             if (box) box.innerHTML = appLinksHtml(getApp(key) || { key, links: [] });
         }
         function addAppLink(key) {
+            touchApp(key);
             const app = getApp(key); if (!app) return;
             const links = (app.links || []).concat([{ label: '', url: '' }]);
             upsertApp(key, { links }); renderAppLinks(key);
@@ -2636,11 +2627,69 @@
             const links = (app.links || []).slice(); links.splice(i, 1);
             upsertApp(key, { links }); renderAppLinks(key);
         }
-        // 지원 이력 탭의 해당 공고 묶음으로 이동
-        function goToHistoryGroup(key) {
-            const btn = Array.from(document.querySelectorAll('.tab-button')).find(b => /지원 이력/.test(b.textContent));
-            if (btn) showTab('history', btn);
+        // 지원(앱 상태 + 그 공고로 만든 문서 전체)을 통째로 삭제
+        function deleteJob(key) {
+            if (!confirm('이 지원을 삭제할까요? 상태·메모·링크와 이 공고로 만든 문서(분석·자소서·이력서)까지 모두 지워지며 되돌릴 수 없습니다.')) return;
+            saveApps(loadApps().filter(a => a.key !== key));
+            saveHistory(loadHistory().filter(h => (h.jobKey || jobKeyOf(h.title)) !== key));
+            _openApps.delete(key);
+            renderApplications();
         }
+        // 생성/분석 결과 → 지원 관리에서 그 공고 카드를 펼친 채 이동
+        function addToApplications(title) {
+            const key = jobKeyOf(title);
+            ensureAppForJob(key, title || '제목 없음');   // 상태 추적 시작(엔트리 보장)
+            _openApps.add(key);
+            const btn = Array.from(document.querySelectorAll('.tab-button')).find(b => /지원 관리/.test(b.textContent));
+            if (btn) showTab('status', btn); else renderApplications();   // showTab('status')가 renderApplications 호출
+            showToast('지원 관리에서 엽니다. 마감일·링크를 입력하세요.', 'success');
+            setTimeout(() => {
+                const card = document.getElementById('appcard_' + key);
+                if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 60);
+        }
+        // 한 공고의 생성 문서(분석·자소서·이력서·버전) 블록 — 카드 펼침 안에 들어감
+        function appDocsHtml(key, items) {
+            if (!items || !items.length) {
+                return `<div style="margin-top:12px; border-top:1px dashed #eee; padding-top:10px;">
+                    <div style="font-size:13px; color:#999;">아직 생성한 문서가 없습니다. 공고 분석·자기소개서·이력서를 만들면 여기에 모입니다.</div>
+                </div>`;
+            }
+            const ORDER = { analysis: 0, cover: 1, resume: 2 };
+            const sorted = items.slice().sort((a, b) => (ORDER[a.type] ?? 9) - (ORDER[b.type] ?? 9));
+            const rows = sorted.map(h => {
+                const preview = escapeHtml(String(h.content).slice(0, 110));
+                return `
+                <div class="hist-row">
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:4px;">
+                        <span class="hist-badge ${h.type}">${HISTORY_TYPES[h.type] || h.type}</span>
+                        ${h.versionNo ? `<span style="background:#eef0ff; color:#5560a8; font-size:11px; padding:1px 7px; border-radius:8px;">v${h.versionNo}${h.versionLabel ? ' · ' + escapeHtml(h.versionLabel) : ''}</span>` : ''}
+                        <span style="color:#aaa; font-size:12px; margin-left:auto;">${fmtDate(h.ts)}</span>
+                    </div>
+                    <div style="color:#777; font-size:13px; line-height:1.5; white-space:pre-wrap;">${preview}${String(h.content).length > 110 ? '…' : ''}</div>
+                    <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+                        <button class="button secondary tiny" onclick="viewHistory('${h.id}')">열기</button>
+                        <button class="button secondary tiny" onclick="copyHistory('${h.id}')">복사</button>
+                        <button class="button secondary tiny" onclick="renameHistory('${h.id}')">이름</button>
+                        <button class="button secondary tiny" onclick="downloadHistory('${h.id}','txt')">TXT</button>
+                        <button class="button secondary tiny" onclick="downloadHistory('${h.id}','doc')">Word</button>
+                        <button class="button secondary tiny" onclick="deleteHistory('${h.id}')">삭제</button>
+                    </div>
+                    <div id="hview_${h.id}" style="margin-top:10px;"></div>
+                </div>`;
+            }).join('');
+            return `<div style="margin-top:12px; border-top:1px dashed #eee; padding-top:10px;">
+                <div style="font-size:13px; color:#666; margin-bottom:6px;">생성한 문서 <span style="color:#aaa;">${items.length}개</span></div>
+                ${rows}
+                ${compareControlsHtml({ key, items: sorted })}
+                <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
+                    <span style="font-size:12px; color:#999; align-self:center;">묶음 내보내기</span>
+                    <button class="button secondary tiny" onclick="downloadGroup('${key}','txt')">전체 TXT</button>
+                    <button class="button secondary tiny" onclick="downloadGroup('${key}','doc')">전체 Word</button>
+                </div>
+            </div>`;
+        }
+
         function renderApplications() {
             const wrap = document.getElementById('applicationList');
             if (!wrap) return;
@@ -2651,66 +2700,96 @@
             }
             const filter = (fEl || {}).value || '';
             const sort = (document.getElementById('statusSort') || {}).value || 'deadline';
-            let list = loadApps();
-            const total = list.length;
-            if (filter) list = list.filter(a => a.status === filter);
-            list = list.slice().sort((a, b) => {
+
+            // 공고(jobKey)별 문서 묶기
+            const histByKey = {};
+            loadHistory().forEach(h => {
+                const k = h.jobKey || jobKeyOf(h.title);
+                if (!histByKey[k]) histByKey[k] = { title: h.title, items: [] };
+                histByKey[k].items.push(h);
+            });
+            // 앱 엔트리 ∪ 문서 묶음 = 모든 공고 (생성만 한 공고도 자동 표시)
+            const apps = loadApps();
+            const appByKey = {};
+            apps.forEach(a => { appByKey[a.key] = a; });
+            const keys = new Set([...apps.map(a => a.key), ...Object.keys(histByKey)]);
+
+            let jobs = [...keys].map(k => {
+                const a = appByKey[k];
+                const hg = histByKey[k];
+                const items = hg ? hg.items : [];
+                const docTs = items.reduce((m, i) => Math.max(m, i.ts || 0), 0);
+                return {
+                    key: k,
+                    title: (a && a.title) || (hg && hg.title) || '제목 없음',
+                    status: (a && a.status) || APP_STATUS[0],
+                    deadline: (a && a.deadline) || '',
+                    links: (a && a.links) || [],
+                    note: (a && a.note) || '',
+                    createdAt: (a && a.createdAt) || docTs,
+                    updatedAt: (a && a.updatedAt) || docTs,
+                    items,
+                };
+            });
+
+            const total = jobs.length;
+            if (filter) jobs = jobs.filter(j => j.status === filter);
+            jobs.sort((a, b) => {
                 if (sort === 'recent') return (b.updatedAt || 0) - (a.updatedAt || 0);
                 if (sort === 'created') return (b.createdAt || 0) - (a.createdAt || 0);
-                // 마감 임박순: 마감일 있는 것 먼저(가까운 순), 없는 것 뒤로
                 const ad = a.deadline ? new Date(a.deadline).getTime() : Infinity;
                 const bd = b.deadline ? new Date(b.deadline).getTime() : Infinity;
                 return ad - bd;
             });
 
             const countEl = document.getElementById('statusCount');
-            if (countEl) countEl.textContent = `총 ${total}건${filter ? ` · ${filter} ${list.length}건` : ''}`;
+            if (countEl) countEl.textContent = `총 ${total}건${filter ? ` · ${filter} ${jobs.length}건` : ''}`;
 
-            if (!list.length) {
-                wrap.innerHTML = '<p style="color:#999; font-size:14px;">아직 등록된 지원이 없습니다. 자기소개서·공고 분석을 만들거나 "+ 지원 추가"로 등록하세요.</p>';
+            if (!jobs.length) {
+                wrap.innerHTML = '<p style="color:#999; font-size:14px;">아직 등록된 지원이 없습니다. 공고 분석·자기소개서·이력서를 만들거나 "+ 지원 추가"로 등록하세요.</p>';
                 return;
             }
 
-            wrap.innerHTML = list.map(a => {
-                const statusOpts = APP_STATUS.map(s => `<option value="${s}" ${s === a.status ? 'selected' : ''}>${s}</option>`).join('');
-                const dd = dDay(a.deadline);
-                const open = _openApps.has(a.key);
-                // 요약 줄에 노출할 마감 정보: 마감일(D-day)
-                const deadlineSummary = a.deadline ? `${escapeHtml(a.deadline)}${dd ? ` (${escapeHtml(dd)})` : ''}` : '';
+            wrap.innerHTML = jobs.map(j => {
+                const statusOpts = APP_STATUS.map(s => `<option value="${s}" ${s === j.status ? 'selected' : ''}>${s}</option>`).join('');
+                const dd = dDay(j.deadline);
+                const open = _openApps.has(j.key);
+                const deadlineSummary = j.deadline ? `${escapeHtml(j.deadline)}${dd ? ` (${escapeHtml(dd)})` : ''}` : '';
                 return `
-                <div class="hist-group">
-                    <div class="hist-group-head" style="cursor:pointer;" onclick="toggleApp('${a.key}')">
-                        <span id="appchev_${a.key}" style="color:#aaa; width:14px; display:inline-block;">${open ? '▾' : '▸'}</span>
-                        <span class="hist-group-title">${escapeHtml(a.title || '제목 없음')}</span>
-                        ${statusBadgeHtml(a.status)}
+                <div class="hist-group" id="appcard_${j.key}">
+                    <div class="hist-group-head" style="cursor:pointer;" onclick="toggleApp('${j.key}')">
+                        <span id="appchev_${j.key}" style="color:#aaa; width:14px; display:inline-block;">${open ? '▾' : '▸'}</span>
+                        <span class="hist-group-title">${escapeHtml(j.title || '제목 없음')}</span>
+                        ${statusBadgeHtml(j.status)}
+                        ${j.items.length ? `<span style="font-size:12px; color:#999;">문서 ${j.items.length}</span>` : ''}
                         ${deadlineSummary ? `<span style="font-size:13px; color:#c0392b; margin-left:auto;">${deadlineSummary}</span>` : '<span style="margin-left:auto;"></span>'}
                     </div>
-                    <div id="appbody_${a.key}" style="display:${open ? 'block' : 'none'}; margin-top:12px;">
+                    <div id="appbody_${j.key}" style="display:${open ? 'block' : 'none'}; margin-top:12px;">
                         <div style="margin-bottom:10px;">
                             <label style="font-size:13px; color:#666;">회사·공고명
-                                <input id="apptitle_${a.key}" value="${escapeAttr(a.title)}" placeholder="예: 카카오 - 백엔드 개발자" style="display:block; width:100%; margin-top:4px;" oninput="setAppTitle('${a.key}', this.value)">
+                                <input id="apptitle_${j.key}" value="${escapeAttr(j.title)}" placeholder="예: 카카오 - 백엔드 개발자" style="display:block; width:100%; margin-top:4px;" oninput="setAppTitle('${j.key}', this.value)">
                             </label>
                         </div>
                         <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:center;">
                             <label style="font-size:13px; color:#666;">상태
-                                <select onchange="setAppStatus('${a.key}', this.value)" style="margin-left:6px; padding:5px 8px; border:1px solid #ddd; border-radius:6px;">${statusOpts}</select>
+                                <select onchange="setAppStatus('${j.key}', this.value)" style="margin-left:6px; padding:5px 8px; border:1px solid #ddd; border-radius:6px;">${statusOpts}</select>
                             </label>
                             <label style="font-size:13px; color:#666;">마감일
-                                <input type="date" value="${escapeAttr(a.deadline)}" onchange="setAppDeadline('${a.key}', this.value)" style="margin-left:6px; padding:4px 8px; border:1px solid #ddd; border-radius:6px;">
+                                <input type="date" value="${escapeAttr(j.deadline)}" onchange="setAppDeadline('${j.key}', this.value)" style="margin-left:6px; padding:4px 8px; border:1px solid #ddd; border-radius:6px;">
                             </label>
-                            <button class="button secondary tiny" onclick="goToHistoryGroup('${a.key}')">지원 이력 보기</button>
                         </div>
                         <div style="margin-top:10px;">
                             <div style="font-size:13px; color:#666; margin-bottom:2px;">공고 링크 <span style="color:#aaa; font-size:12px;">· 사이트별로 여러 개 가능</span></div>
-                            <div id="applinks_${a.key}">${appLinksHtml(a)}</div>
-                            <button class="button secondary tiny" style="margin-top:8px;" onclick="addAppLink('${a.key}')">+ 링크 추가</button>
+                            <div id="applinks_${j.key}">${appLinksHtml(j)}</div>
+                            <button class="button secondary tiny" style="margin-top:8px;" onclick="addAppLink('${j.key}')">+ 링크 추가</button>
                         </div>
                         <div style="margin-top:10px;">
-                            <textarea placeholder="메모 (전형 일정, 준비 사항 등)" style="width:100%; min-height:44px;" oninput="setAppNote('${a.key}', this.value)">${escapeHtml(a.note || '')}</textarea>
+                            <textarea placeholder="메모 (전형 일정, 준비 사항 등)" style="width:100%; min-height:44px;" oninput="setAppNote('${j.key}', this.value)">${escapeHtml(j.note || '')}</textarea>
                         </div>
+                        ${appDocsHtml(j.key, j.items)}
                         <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end; border-top:1px dashed #eee; padding-top:12px;">
-                            <button class="button secondary" onclick="deleteApp('${a.key}')">삭제</button>
-                            <button class="button" onclick="saveApp('${a.key}')">저장</button>
+                            <button class="button secondary" onclick="deleteJob('${j.key}')">삭제</button>
+                            <button class="button" onclick="saveApp('${j.key}')">저장</button>
                         </div>
                     </div>
                 </div>`;
@@ -2750,7 +2829,22 @@
         }
         // 같은 공고의 분석·자소서·이력서를 한 묶음으로 보기 위한 키 (제목 정규화)
         function jobKeyOf(title) {
-            return String(title || '').toLowerCase().replace(/[\s\W_]+/g, '').slice(0, 40) || '_';
+            // 영숫자·한글만 남기고 공백·기호 제거 (\W는 한글을 지워버리므로 직접 화이트리스트)
+            return String(title || '').toLowerCase().replace(/[^0-9a-z가-힣]+/g, '').slice(0, 40) || '_';
+        }
+        // 구버전 jobKey(한글이 '_'로 뭉침) → 새 규칙으로 1회 재계산 (멱등)
+        function migrateJobKeys() {
+            const h = loadHistory(); let hc = false;
+            h.forEach(it => { const nk = jobKeyOf(it.title); if (it.jobKey !== nk) { it.jobKey = nk; hc = true; } });
+            if (hc) saveHistory(h);
+            const apps = loadApps(); let ac = false; const map = {};
+            apps.forEach(a => {
+                const nk = a.title ? jobKeyOf(a.title) : a.key;
+                if (nk !== a.key) { a.key = nk; ac = true; }
+                if (map[a.key]) { ac = true; if ((a.updatedAt || 0) >= (map[a.key].updatedAt || 0)) map[a.key] = a; }
+                else map[a.key] = a;
+            });
+            if (ac) saveApps(Object.values(map));
         }
         function addHistory({ type, title, content, drafts }) {
             if (!content) return;
@@ -2773,8 +2867,7 @@
             };
             list.unshift(item);
             saveHistory(list);
-            ensureAppForJob(key, item.title);   // 지원 현황 대시보드에 자동 등록
-            renderHistory();
+            renderApplications();
         }
         // 이력 항목 버전 이름 지정
         function renameHistory(id) {
@@ -2785,18 +2878,18 @@
             if (v === null) return;
             h.versionLabel = v.trim();
             saveHistory(list);
-            renderHistory();
+            renderApplications();
         }
         function deleteHistory(id) {
             if (!confirm('이 이력을 삭제할까요?')) return;
             saveHistory(loadHistory().filter(h => h.id !== id));
-            renderHistory();
+            renderApplications();
         }
         function clearHistory() {
             if (!loadHistory().length) return alert('저장된 이력이 없습니다.');
             if (!confirm('지원 이력을 모두 삭제할까요? 되돌릴 수 없습니다.')) return;
             saveHistory([]);
-            renderHistory();
+            renderApplications();
         }
 
         function fmtDate(ts) {
@@ -3188,6 +3281,8 @@
             const data = {
                 goData: localStorage.getItem('goData'),
                 goHistory: localStorage.getItem('goHistory'),
+                goApplications: localStorage.getItem('goApplications'),
+                coverQuestions: localStorage.getItem('coverQuestions'),
                 factStore: localStorage.getItem('factStore'),
                 exportDate: new Date().toISOString(),
             };
@@ -3216,10 +3311,12 @@
                             loadData();
                         }
                         if (data.goHistory) localStorage.setItem('goHistory', data.goHistory);
+                        if (data.goApplications) localStorage.setItem('goApplications', data.goApplications);
+                        if (data.coverQuestions) localStorage.setItem('coverQuestions', data.coverQuestions);
                         if (data.factStore) localStorage.setItem('factStore', data.factStore);
                         renderProfileSwitcher();
                         showManualEntry();
-                        renderHistory();
+                        renderApplications();
                         renderFactList();
                         showAlert('settingsOutput', '데이터를 불러왔습니다.', 'success');
                     } catch (error) {
@@ -3242,6 +3339,7 @@
         // 페이지 로드
         window.addEventListener('load', () => {
             loadData();            // 구버전 'profile' → 'goData' 마이그레이션 수행
+            migrateJobKeys();      // 구버전 jobKey(한글 '_' 충돌) 재계산
             renderProfileSwitcher();
             renderFactList();      // 검증된 성과·수치 목록 복원
             renderCoverQuestions();// 저장된 자소서 문항 복원
