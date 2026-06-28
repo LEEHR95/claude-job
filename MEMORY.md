@@ -3,10 +3,10 @@
 ## 마지막 세션
 <!-- /co가 이 섹션 전체를 덮어씁니다 (다음 "##"까지) -->
 - 날짜: 2026-06-28
-- 요약(2026-06-28): 프로필 '경력 사항' 카드(회사별 이력) 신규 + 자소서 첨부 UI 개선. (1)경력 카드 — careerCards[]{id,company,period,role,summary,contributions[],outcomes[]}, 프로젝트 카드와 동일 CRUD(addCareerCard/edit/save/delete/cancel, careerEditorHtml, _editingCareerId, project-card·project-editor-box CSS 재사용). careers 텍스트 동기화(careersToText→persistCareerCards). 폼 fg-careers 섹션(경력년수 칸 아래), 보기화면 '경력 사항' 섹션(buildProfileViewHtml), saveProfile/fillProfileForm/clearProfile 연동. AI 추출 병합 — 회사명+기간 normTitle 중복제거 후 기존에 누적. api/analyze-profile.js 스키마에 careerCards 추가('어디서 일했나' vs projectCards '무엇을 만들었나', 같은 회사 프로젝트는 contributions로 묶기). api/_upstage.js profileBlock에 '경력 사항' 주입→생성 반영. 기존엔 경력=년수 숫자 한 칸뿐이라 회사별 이력 입력·표시 칸 없던 문제 해결. (2)자소서 첨부 UI — 폼 기본 file input(항상 '선택된 파일 없음' 노출) 숨김. displayDocStatus: 첨부시 초록박스 '✓ 현재 첨부됨: OO.pdf (N자)'+[다른 파일로 교체]/[삭제], 미첨부시 [자소서 첨부하기] 버튼. 교체는 hidden input.click(). 이력서 교체(replace)시 refCover/refResume는 keep목록(line~1450)으로 보존됨 확인. 생성 자소서/지원이력은 goHistory로 프로필과 별개라 무관.
-- 이전 요약(2026-06-25): UI 개편 — 상단 가로탭→우측 sticky 사이드바, 본문카드 독립스크롤, 지원이력 공고별 묶음(jobKey 그룹핑), Word/묶음 내보내기(downloadDoc .doc msword), 적합도(analyzeJobFit 빠진키워드), 새 공고 초기화(resetAnalysis).
-- 이전 요약(2026-06-24): P2 완료 — 공고↔프로젝트 매칭, 작성규칙화(_writing-rules.js), 프로필 병합업로드+4섹션, 스킬 [{name,detail}] 배열화, 지원이력 저장(goHistory), 사실검증, OCR 제목버그 수정, Vercel 배포.
-- 다음 할 일: ① Vercel 배포본에서 AI 경력 카드 추출 동작 확인(이력서 재업로드 시 careerCards 자동 생성되는지) ② (선택) 경력 카드 담당업무 키워드를 공고 적합도 매칭(getMyTerms)에 포함할지 결정 ③ 기존 검증 — .doc Word/한글 열림, 적합도 사전(COMMON_JD_KEYWORDS) 실공고 튜닝, jobKey 그룹핑. (배포운영) UPSTAGE_API_KEY 등록 확인.
+- 요약(2026-06-28): 오전 — 경력 사항 카드(careerCards) + 자소서 첨부 UI 개선(displayDocStatus 초록박스/교체). 오후 — 대형 기능 3종 + 버그수정. (A)자소서 문항별 작성 — 자소서 탭 #coverQuestions(문항+글자수, localStorage['coverQuestions']), getCoverQuestions→payload.questions. api/generate-cover-letter.js: questions 있으면 동적 문항 섹션(글자수 제한), 없으면 기존 4섹션. renderEnsemble에 countByQuestions(문항 헤더 토큰매칭으로 문항별 글자수/제한 표시). (B)지원 현황 새 탭(#status) — localStorage['goApplications'] {key,title,status,deadline,links[{label,url}],note}, APP_STATUS 6단계, dDay, statusBadgeHtml. addHistory가 ensureAppForJob로 자동등록. 아코디언 카드(접힘=제목·상태·마감일 한 줄, 펼침 편집, _openApps로 펼침유지) + 우측하단 [저장](saveApp: 접기+재정렬+토스트) + 정렬 3종(마감/등록일/변경). +지원추가는 팝업 없이 빈 카드 펼쳐 apptitle 인라인 입력. 세터는 재렌더 안 함(setApp*), 링크는 renderAppLinks 부분렌더. (C)자소서 버전관리 — addHistory에 versionNo/versionLabel, renderHistory에 v배지+[이름](renameHistory), 같은 type≥2면 [버전 비교](openVersionCompare/renderVersionCompare 좌우 2단). (버그)적합도 0% — getMyTerms가 스킬명만·통째 정확일치라 'AI 모델..'속 ai 등 못잡음. getMyProfileText(스킬명+상세+카드/경력 전체) tokenize + myText.includes 부분일치로 수정, vocab=COMMON∪내토큰. matchProjectsToJob도 토큰 부분일치. (실데이터 0%→83% 검증). (D)생성결과 다운로드 파일명 jobFileBase(종류_공고명).
+- 이전 요약(2026-06-25): UI 개편 — 우측 sticky 사이드바, 지원이력 공고별 묶음(jobKey), Word/묶음 내보내기, 적합도, 새 공고 초기화.
+- 이전 요약(2026-06-24): P2 완료 — 공고↔프로젝트 매칭, 작성규칙화, 프로필 병합업로드+4섹션, 스킬 배열화, 지원이력 저장(goHistory), 사실검증, OCR 제목버그.
+- 다음 할 일: ① [설계 논의중] 지원이력 vs 지원현황 기능 중복 — 둘 다 jobKey 단위라 한 회사가 양쪽에 뜸(이력=생성문서, 현황=상태/마감/링크). 하나의 'job 허브'로 통합할지 검토. ② Vercel 배포(미배포 상태 — 오후 작업 전부 로컬에만 커밋됨) ③ 배포본에서 A/B/C·적합도 실동작 확인 ④ AI 경력카드 추출 확인. (운영) UPSTAGE_API_KEY 확인.
 
 ## 의사결정 이력
 
@@ -43,3 +43,4 @@
 | 2026-06-24 | P2 전체 완료: 지원이력 저장 + UX(자동전달·로딩스피너·토스트) + 공고↔프로젝트 매칭 + 작성 규칙화 + 프로필 병합업로드/4섹션 + 스킬 배열화 | index.html, api/_writing-rules.js, api/_upstage.js, api/analyze-profile.js, api/generate-*.js |
 | 2026-06-25 | 우측 sticky 사이드바+본문 독립스크롤 + 지원이력 공고별 묶음 + Word/묶음 내보내기 + 적합도(빠진 키워드) + 새 공고 초기화 | index.html |
 | 2026-06-28 | 프로필 경력 사항 카드(회사별 이력) 신규 + 자소서 첨부 UI 개선(현재 첨부 강조/클릭 교체) | index.html, api/analyze-profile.js, api/_upstage.js |
+| 2026-06-28 | 자소서 문항별 작성 + 지원현황 대시보드(아코디언/저장/정렬) + 자소서 버전관리 + 적합도 매칭 버그수정 + 다운로드 파일명 공고명화 | index.html, api/generate-cover-letter.js |

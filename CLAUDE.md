@@ -69,3 +69,4 @@
 | 2026-06-24 | P2 완료: 지원이력 저장·UX개편(자동전달/로딩/토스트)·공고↔프로젝트 매칭·작성 규칙화·프로필 병합업로드+4섹션·스킬 배열화 | index.html, api/_writing-rules.js, api/_upstage.js, api/analyze-profile.js, api/generate-*.js | 재사용 루프 P2 마무리 |
 | 2026-06-25 | 우측 sticky 사이드바+본문 독립스크롤·지원이력 공고별 묶음·Word/묶음 내보내기·적합도(빠진 키워드)·새 공고 초기화 | index.html | UI 개편 + 매칭품질/내보내기 |
 | 2026-06-28 | 프로필 경력 사항 카드(회사별 이력) 신규 + 자소서 첨부 UI 개선 | index.html, api/analyze-profile.js, api/_upstage.js | 회사별 경력 입력칸 부재 해결 + 첨부 명확화 |
+| 2026-06-28 | 자소서 문항별 작성 + 지원현황 대시보드 + 자소서 버전관리 + 적합도 매칭 버그수정 + 다운로드 파일명 공고명화 | index.html, api/generate-cover-letter.js | 지원 관리 루프 강화 + 적합도 오작동 수정 |

@@ -517,6 +517,7 @@
                 <button class="tab-button" onclick="showTab('analysis', this)">공고 분석</button>
                 <button class="tab-button" onclick="showTab('cover', this)">자기소개서 초안</button>
                 <button class="tab-button" onclick="showTab('resume', this)">이력서 생성</button>
+                <button class="tab-button" onclick="showTab('status', this)">지원 현황</button>
                 <button class="tab-button" onclick="showTab('history', this)">지원 이력</button>
                 <button class="tab-button" onclick="showTab('settings', this)">설정</button>
             </nav>
@@ -742,6 +743,13 @@
 
             <div id="coverMatchOutput" style="margin-bottom:18px;"></div>
 
+            <div class="form-group">
+                <label>자소서 문항 직접 입력 <span class="optional-tag">선택 · 비우면 기본 4섹션</span></label>
+                <p style="color:#999; font-size:12px; margin:4px 0 10px;">회사 양식의 문항과 글자수를 넣으면 문항마다 맞춰 생성합니다. (글자수 비워도 됨)</p>
+                <div id="coverQuestions"></div>
+                <button type="button" class="button secondary" onclick="addCoverQuestion()">+ 문항 추가</button>
+            </div>
+
             <button class="button" onclick="generateCoverLetter()">자기소개서 초안 생성</button>
 
             <div id="coverOutput"></div>
@@ -767,6 +775,27 @@
             <button class="button" onclick="generateResume()">이력서 생성</button>
 
             <div id="resumeOutput"></div>
+        </div>
+
+        <!-- 지원 현황 탭 -->
+        <div id="status" class="tab-content">
+            <h2>지원 현황</h2>
+            <p style="color: #666; margin-bottom: 20px;">회사별 지원 상태와 마감일, 공고 링크를 한눈에 관리합니다. 자기소개서·공고 분석을 만들면 자동으로 추가됩니다.</p>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
+                <select id="statusFilter" onchange="renderApplications()" style="padding:8px 10px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="">전체 상태</option>
+                </select>
+                <select id="statusSort" onchange="renderApplications()" style="padding:8px 10px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="deadline">마감 임박순</option>
+                    <option value="created">등록일순</option>
+                    <option value="recent">최근 변경순</option>
+                </select>
+                <span id="statusCount" style="color:#999; font-size:13px;"></span>
+                <button class="button secondary" style="margin-left:auto;" onclick="addManualApp()">+ 지원 추가</button>
+            </div>
+
+            <div id="applicationList"></div>
         </div>
 
         <!-- 지원 이력 탭 -->
@@ -830,6 +859,7 @@
             document.getElementById(tabName).classList.add('active');
             btn.classList.add('active');
             if (tabName === 'history') renderHistory();
+            if (tabName === 'status') renderApplications();
             scrollCardTop();
         }
 
@@ -1704,30 +1734,48 @@
             '와이어프레임','요구사항','프로세스','분석','전략','성과','고객','품질','테스트','자동화','보안','성능',
         ];
 
-        // 내가 보유한 용어(스킬명 + 모든 프로젝트 태그/기술 + 직무)
-        function getMyTerms() {
+        // 문자열을 키워드 토큰으로 분해 (영문/숫자/기호 묶음 + 한글 묶음)
+        function tokenize(text) {
+            return (String(text || '').toLowerCase().match(/[a-z0-9.+#/]+|[가-힣]+/g) || []);
+        }
+
+        // 내 프로필 전체를 하나의 소문자 텍스트로 (스킬 이름+상세, 프로젝트/경력 태그·기술·제목·요약·내용, 직무, 강점)
+        function getMyProfileText() {
             const p = getProfile();
-            const terms = [];
-            parseSkills(p.skills).forEach(s => { if (s.name) terms.push(s.name); });
+            const parts = [];
+            parseSkills(p.skills).forEach(s => { if (s.name) parts.push(s.name); if (s.detail) parts.push(s.detail); });
             getCards().forEach(c => {
-                [...(c.tags || []), ...(c.techStack || [])].forEach(t => t && terms.push(t));
+                [c.title, c.summary, ...(c.tags || []), ...(c.techStack || []), ...(c.contributions || []), ...(c.outcomes || [])]
+                    .forEach(t => t && parts.push(t));
             });
-            if (p.position) String(p.position).split(/[\/,·]/).forEach(t => t.trim() && terms.push(t.trim()));
+            (p.careerCards || []).forEach(c => {
+                [c.company, c.role, c.summary, ...(c.contributions || []), ...(c.outcomes || [])].forEach(t => t && parts.push(t));
+            });
+            if (p.position) parts.push(p.position);
+            if (p.strengths) parts.push(p.strengths);
+            return parts.join(' \n ').toLowerCase();
+        }
+
+        // 내가 보유한 키워드 토큰 집합 (vocab 보강용)
+        function getMyTerms() {
             const set = new Set();
-            terms.forEach(t => { const k = String(t).trim().toLowerCase(); if (k.length >= 2) set.add(k); });
+            tokenize(getMyProfileText()).forEach(t => { if (t.length >= 2) set.add(t); });
             return set;
         }
 
         function analyzeJobFit(jobText) {
             const text = String(jobText || '').toLowerCase();
             if (!text.trim()) return null;
-            const mine = getMyTerms();
-            const vocab = new Set([...mine, ...COMMON_JD_KEYWORDS.map(k => k.toLowerCase())]);
+            const myText = getMyProfileText();           // 내 프로필 원문(부분일치 판정용)
+            const mineTokens = getMyTerms();             // 내 키워드 토큰(공고 키워드 후보 보강)
+            // 공고가 요구하는 키워드 후보 = 일반 채용 키워드 ∪ 내 키워드 토큰
+            const vocab = new Set([...COMMON_JD_KEYWORDS.map(k => k.toLowerCase()), ...mineTokens]);
             const matched = [], missing = [], seen = new Set();
             vocab.forEach(term => {
-                if (!text.includes(term) || seen.has(term)) return;
+                if (term.length < 2 || seen.has(term) || !text.includes(term)) return;
                 seen.add(term);
-                (mine.has(term) ? matched : missing).push(term);
+                // 내 프로필 어딘가에 그 단어가 있으면 보유로 인정 (정확 일치가 아닌 부분일치)
+                (myText.includes(term) ? matched : missing).push(term);
             });
             const total = matched.length + missing.length;
             const score = total ? Math.round((matched.length / total) * 100) : 0;
@@ -1769,7 +1817,9 @@
                     const key = t.toLowerCase();
                     if (seen.has(key)) return;
                     seen.add(key);
-                    if (text.includes(key)) matched.push(t);
+                    // 통째로 들어맞거나, 토큰 중 하나라도 공고에 있으면 매칭
+                    const hit = text.includes(key) || tokenize(key).some(tok => tok.length >= 2 && text.includes(tok));
+                    if (hit) matched.push(t);
                 });
                 return { card: c, matched, score: matched.length };
             }).filter(m => m.score > 0).sort((a, b) => b.score - a.score);
@@ -2244,6 +2294,77 @@
             showToast('새 공고를 시작합니다. 입력을 비웠어요.', 'success');
         }
 
+        // ── 자소서 문항 (선택) : localStorage['coverQuestions'] = [{prompt, limit}] ──
+        function loadCoverQuestions() {
+            try { return JSON.parse(localStorage.getItem('coverQuestions') || '[]'); } catch { return []; }
+        }
+        function saveCoverQuestions(list) {
+            localStorage.setItem('coverQuestions', JSON.stringify(list));
+        }
+        function renderCoverQuestions() {
+            const wrap = document.getElementById('coverQuestions');
+            if (!wrap) return;
+            const list = loadCoverQuestions();
+            wrap.innerHTML = list.map((q, i) => `
+                <div style="display:flex; gap:8px; margin-bottom:8px; align-items:flex-start;">
+                    <textarea placeholder="예: 지원 동기와 입사 후 포부를 작성해 주세요." style="flex:1; min-height:48px;" oninput="updateCoverQuestion(${i},'prompt',this.value)">${escapeHtml(q.prompt || '')}</textarea>
+                    <input type="number" min="0" step="100" value="${q.limit || ''}" placeholder="글자수" style="width:90px;" oninput="updateCoverQuestion(${i},'limit',this.value)">
+                    <button type="button" class="button secondary tiny" onclick="removeCoverQuestion(${i})">삭제</button>
+                </div>`).join('');
+        }
+        function addCoverQuestion() {
+            const list = loadCoverQuestions();
+            list.push({ prompt: '', limit: '' });
+            saveCoverQuestions(list);
+            renderCoverQuestions();
+        }
+        function updateCoverQuestion(i, field, val) {
+            const list = loadCoverQuestions();
+            if (!list[i]) return;
+            list[i][field] = field === 'limit' ? (parseInt(val, 10) || '') : val;
+            saveCoverQuestions(list);
+        }
+        function removeCoverQuestion(i) {
+            const list = loadCoverQuestions();
+            list.splice(i, 1);
+            saveCoverQuestions(list);
+            renderCoverQuestions();
+        }
+        function getCoverQuestions() {
+            return loadCoverQuestions()
+                .map(q => ({ prompt: String(q.prompt || '').trim(), limit: parseInt(q.limit, 10) || 0 }))
+                .filter(q => q.prompt);
+        }
+
+        // 완성본을 문항 헤더 기준으로 분리해 문항별 글자수 계산 (실패 시 null)
+        function countByQuestions(text, questions) {
+            const lines = String(text || '').split('\n');
+            const norm = s => String(s || '').replace(/\s+/g, '').toLowerCase();
+            const used = new Set();
+            const heads = [];
+            questions.forEach((q, qi) => {
+                const key = norm(q.prompt).slice(0, 8);   // 짧은 키로 매칭(모델이 제목을 줄일 수 있음)
+                if (!key) return;
+                for (let li = 0; li < lines.length; li++) {
+                    if (used.has(li)) continue;
+                    const ln = norm(lines[li]);
+                    if (!ln || ln.length > 60) continue;  // 헤더는 짧은 줄 (본문 문단 제외)
+                    const short = ln.slice(0, 8);
+                    if (ln.includes(key) || (short.length >= 4 && key.includes(short))) {
+                        heads.push({ qi, li }); used.add(li); break;
+                    }
+                }
+            });
+            if (heads.length < questions.length) return null;
+            heads.sort((a, b) => a.li - b.li);
+            return heads.map((h, i) => {
+                const start = h.li + 1;
+                const end = i + 1 < heads.length ? heads[i + 1].li : lines.length;
+                const body = lines.slice(start, end).join('\n').trim();
+                return { prompt: questions[h.qi].prompt, limit: questions[h.qi].limit, count: body.length };
+            });
+        }
+
         // 자기소개서 초안
         async function generateCoverLetter(force) {
             const profile = getProfile();
@@ -2252,9 +2373,10 @@
             if (!jobPosting.trim()) return showAlert('coverAlert', '채용 공고를 입력해주세요.', 'warning');
             if (!profile.position) return showAlert('coverAlert', '먼저 프로필을 저장해주세요.', 'warning');
 
+            const questions = getCoverQuestions();
             await generateEnsemble({
                 endpoint: ENDPOINTS.cover,
-                payload: { profile, jobPosting, facts: getVerifiedFacts() },
+                payload: { profile, jobPosting, facts: getVerifiedFacts(), questions },
                 alertId: 'coverAlert',
                 outputId: 'coverOutput',
                 loadingMsg: '관점이 다른 초안 3개를 만들고 병합하는 중입니다... (조금 걸려요)',
@@ -2264,6 +2386,7 @@
                 force: !!force,
                 historyType: 'cover',
                 historyTitle: jobTitleFromPosting(jobPosting),
+                questions,
             });
         }
 
@@ -2314,13 +2437,13 @@
         }
 
         // 앙상블 호출 + 렌더 (+ 캐시)
-        async function generateEnsemble({ endpoint, payload, alertId, outputId, loadingMsg, filePrefix, cacheTag, regen, force, historyType, historyTitle }) {
+        async function generateEnsemble({ endpoint, payload, alertId, outputId, loadingMsg, filePrefix, cacheTag, regen, force, historyType, historyTitle, questions }) {
             const key = genCacheKey(cacheTag, payload);
 
             if (!force) {
                 const hit = getGenCache(key);
                 if (hit && hit.merged) {
-                    renderEnsemble({ outputId, alertId, data: hit, filePrefix, regen, fromCache: true, historyType, historyTitle });
+                    renderEnsemble({ outputId, alertId, data: hit, filePrefix, regen, fromCache: true, historyType, historyTitle, questions });
                     return;
                 }
             }
@@ -2338,7 +2461,7 @@
 
                 hideLoading();
                 setGenCache(key, { drafts: data.drafts, merged: data.merged });
-                renderEnsemble({ outputId, alertId, data, filePrefix, regen, fromCache: false, historyType, historyTitle });
+                renderEnsemble({ outputId, alertId, data, filePrefix, regen, fromCache: false, historyType, historyTitle, questions });
                 if (historyType) {
                     addHistory({ type: historyType, title: historyTitle, content: data.merged || '', drafts: data.drafts || [] });
                 }
@@ -2348,10 +2471,28 @@
             }
         }
 
-        function renderEnsemble({ outputId, alertId, data, filePrefix, regen, fromCache, historyType, historyTitle }) {
+        function renderEnsemble({ outputId, alertId, data, filePrefix, regen, fromCache, historyType, historyTitle, questions }) {
             const merged = data.merged || '';
             const drafts = Array.isArray(data.drafts) ? data.drafts : [];
             const mergedId = outputId + '_merged';
+
+            // 문항별 모드면 문항 글자수 표시
+            let counterHtml = '';
+            if (questions && questions.length) {
+                const info = countByQuestions(merged, questions);
+                if (info) {
+                    counterHtml = `<div style="margin-top:10px; font-size:13px; background:#f7f6f2; border-radius:8px; padding:10px 14px;">
+                        <div style="color:#888; margin-bottom:4px;">문항별 글자수</div>
+                        ${info.map(r => {
+                            const over = r.limit && r.count > r.limit;
+                            const label = r.prompt.length > 32 ? r.prompt.slice(0, 32) + '…' : r.prompt;
+                            return `<div style="color:${over ? '#d32f2f' : '#555'};">· ${escapeHtml(label)} — ${r.count}자${r.limit ? ` / ${r.limit}자` : ''}${over ? ' (초과)' : ''}</div>`;
+                        }).join('')}
+                    </div>`;
+                } else {
+                    counterHtml = `<div style="margin-top:10px; font-size:13px; color:#999;">전체 ${merged.length}자</div>`;
+                }
+            }
 
             const draftsHtml = drafts.map((d, i) => `
                 <div style="margin-top:14px;">
@@ -2365,6 +2506,7 @@
             document.getElementById(outputId).innerHTML = `
                 <h3 style="margin:20px 0 10px;">완성본 <span style="font-size:13px; color:#999; font-weight:400;">3개 초안 병합</span></h3>
                 <div class="output-box" id="${mergedId}">${escapeHtml(merged)}</div>
+                ${counterHtml}
                 <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
                     <button class="button secondary" onclick="copyText('${mergedId}')">복사</button>
                     <button class="button secondary" onclick="downloadText('${jobFileBase(historyType, historyTitle)}.txt', document.getElementById('${mergedId}').innerText)">TXT</button>
@@ -2379,6 +2521,200 @@
 
             // 생성 직후 숫자 자동 검증 (본문 하이라이트 + 리포트)
             runFactCheck(outputId, merged);
+        }
+
+        // ══════════════ 지원 현황 (localStorage['goApplications']) ══════════════
+        // { key, title, status, deadline('YYYY-MM-DD'), links:[{label,url}], note, createdAt, updatedAt }
+        const APP_STATUS = ['관심', '지원완료', '서류합격', '면접', '최종합격', '불합격'];
+        const APP_STATUS_COLOR = {
+            '관심': '#9e9e9e', '지원완료': '#5560a8', '서류합격': '#1976d2',
+            '면접': '#f57c00', '최종합격': '#2e7d32', '불합격': '#b0b0b0',
+        };
+        function loadApps() {
+            try { return JSON.parse(localStorage.getItem('goApplications') || '[]'); } catch { return []; }
+        }
+        function saveApps(list) { localStorage.setItem('goApplications', JSON.stringify(list)); }
+        function getApp(key) { return loadApps().find(a => a.key === key) || null; }
+        function upsertApp(key, patch) {
+            const list = loadApps();
+            const i = list.findIndex(a => a.key === key);
+            if (i >= 0) { list[i] = { ...list[i], ...patch, updatedAt: Date.now() }; }
+            else { list.push({ key, title: '', status: APP_STATUS[0], deadline: '', links: [], note: '', createdAt: Date.now(), updatedAt: Date.now(), ...patch }); }
+            saveApps(list);
+        }
+        function deleteApp(key) {
+            if (!confirm('이 지원 항목을 삭제할까요? (지원 이력 문서는 지워지지 않습니다)')) return;
+            saveApps(loadApps().filter(a => a.key !== key));
+            renderApplications();
+        }
+        // 이력 생성 시 자동 등록 (없을 때만 생성)
+        function ensureAppForJob(key, title) {
+            const list = loadApps();
+            const i = list.findIndex(a => a.key === key);
+            if (i === -1) {
+                list.push({ key, title: title || '제목 없음', status: APP_STATUS[0], deadline: '', links: [], note: '', createdAt: Date.now(), updatedAt: Date.now() });
+            } else if (!list[i].title || list[i].title === '제목 없음') {
+                list[i].title = title || list[i].title;
+            }
+            saveApps(list);
+        }
+        function addManualApp() {
+            const key = genId();
+            upsertApp(key, { title: '' });   // 빈 카드 생성 (팝업 없이 바로 입력)
+            _openApps.add(key);              // 펼쳐서 바로 입력
+            renderApplications();
+            // 새 카드의 제목 입력칸에 포커스
+            const el = document.getElementById('apptitle_' + key);
+            if (el) el.focus();
+        }
+        // 마감일 → D-day 문자열
+        function dDay(deadline) {
+            if (!deadline) return '';
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const d = new Date(deadline + 'T00:00:00');
+            if (isNaN(d)) return '';
+            const diff = Math.round((d - today) / 86400000);
+            if (diff > 0) return `D-${diff}`;
+            if (diff === 0) return 'D-DAY';
+            return `마감 +${-diff}`;
+        }
+        function statusBadgeHtml(status) {
+            const c = APP_STATUS_COLOR[status] || '#9e9e9e';
+            return `<span style="background:${c}; color:#fff; font-size:12px; padding:2px 9px; border-radius:10px;">${escapeHtml(status || '관심')}</span>`;
+        }
+        // 펼쳐진 카드 추적 (재렌더해도 펼침 유지)
+        const _openApps = new Set();
+        function toggleApp(key) {
+            const body = document.getElementById('appbody_' + key);
+            const chev = document.getElementById('appchev_' + key);
+            if (!body) return;
+            const open = body.style.display === 'none';
+            body.style.display = open ? 'block' : 'none';
+            if (chev) chev.textContent = open ? '▾' : '▸';
+            if (open) _openApps.add(key); else _openApps.delete(key);
+        }
+        // 저장: 접고 + 재정렬 + 토스트 (입력은 이미 저장돼 있음)
+        function saveApp(key) {
+            _openApps.delete(key);
+            renderApplications();
+            showToast('저장되었습니다.', 'success');
+        }
+        // 인라인 편집 핸들러 (재렌더하지 않음 — 펼친 카드 유지)
+        function setAppTitle(key, val) { upsertApp(key, { title: val }); }
+        function setAppStatus(key, val) { upsertApp(key, { status: val }); }
+        function setAppDeadline(key, val) { upsertApp(key, { deadline: val }); }
+        function setAppNote(key, val) { upsertApp(key, { note: val }); }
+        function setAppLink(key, i, field, val) {
+            const app = getApp(key); if (!app) return;
+            const links = (app.links || []).slice();
+            if (!links[i]) return;
+            links[i] = { ...links[i], [field]: val };
+            upsertApp(key, { links });
+        }
+        // 링크 행 HTML
+        function appLinksHtml(a) {
+            return (a.links || []).map((lk, i) => `
+                <div style="display:flex; gap:6px; margin-top:6px; align-items:center;">
+                    <input value="${escapeAttr(lk.label)}" placeholder="사이트명(예: 사람인)" style="width:140px;" oninput="setAppLink('${a.key}',${i},'label',this.value)">
+                    <input value="${escapeAttr(lk.url)}" placeholder="https://..." style="flex:1; min-width:160px;" oninput="setAppLink('${a.key}',${i},'url',this.value)">
+                    ${lk.url ? `<a href="${escapeAttr(lk.url)}" target="_blank" rel="noopener" class="button secondary tiny" style="text-decoration:none;">열기</a>` : ''}
+                    <button class="button secondary tiny" onclick="removeAppLink('${a.key}',${i})">삭제</button>
+                </div>`).join('');
+        }
+        // 링크만 부분 렌더 (카드 펼침 유지)
+        function renderAppLinks(key) {
+            const box = document.getElementById('applinks_' + key);
+            if (box) box.innerHTML = appLinksHtml(getApp(key) || { key, links: [] });
+        }
+        function addAppLink(key) {
+            const app = getApp(key); if (!app) return;
+            const links = (app.links || []).concat([{ label: '', url: '' }]);
+            upsertApp(key, { links }); renderAppLinks(key);
+        }
+        function removeAppLink(key, i) {
+            const app = getApp(key); if (!app) return;
+            const links = (app.links || []).slice(); links.splice(i, 1);
+            upsertApp(key, { links }); renderAppLinks(key);
+        }
+        // 지원 이력 탭의 해당 공고 묶음으로 이동
+        function goToHistoryGroup(key) {
+            const btn = Array.from(document.querySelectorAll('.tab-button')).find(b => /지원 이력/.test(b.textContent));
+            if (btn) showTab('history', btn);
+        }
+        function renderApplications() {
+            const wrap = document.getElementById('applicationList');
+            if (!wrap) return;
+            // 상태 필터 옵션 채우기 (1회)
+            const fEl = document.getElementById('statusFilter');
+            if (fEl && fEl.options.length <= 1) {
+                APP_STATUS.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; fEl.appendChild(o); });
+            }
+            const filter = (fEl || {}).value || '';
+            const sort = (document.getElementById('statusSort') || {}).value || 'deadline';
+            let list = loadApps();
+            const total = list.length;
+            if (filter) list = list.filter(a => a.status === filter);
+            list = list.slice().sort((a, b) => {
+                if (sort === 'recent') return (b.updatedAt || 0) - (a.updatedAt || 0);
+                if (sort === 'created') return (b.createdAt || 0) - (a.createdAt || 0);
+                // 마감 임박순: 마감일 있는 것 먼저(가까운 순), 없는 것 뒤로
+                const ad = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+                const bd = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+                return ad - bd;
+            });
+
+            const countEl = document.getElementById('statusCount');
+            if (countEl) countEl.textContent = `총 ${total}건${filter ? ` · ${filter} ${list.length}건` : ''}`;
+
+            if (!list.length) {
+                wrap.innerHTML = '<p style="color:#999; font-size:14px;">아직 등록된 지원이 없습니다. 자기소개서·공고 분석을 만들거나 "+ 지원 추가"로 등록하세요.</p>';
+                return;
+            }
+
+            wrap.innerHTML = list.map(a => {
+                const statusOpts = APP_STATUS.map(s => `<option value="${s}" ${s === a.status ? 'selected' : ''}>${s}</option>`).join('');
+                const dd = dDay(a.deadline);
+                const open = _openApps.has(a.key);
+                // 요약 줄에 노출할 마감 정보: 마감일(D-day)
+                const deadlineSummary = a.deadline ? `${escapeHtml(a.deadline)}${dd ? ` (${escapeHtml(dd)})` : ''}` : '';
+                return `
+                <div class="hist-group">
+                    <div class="hist-group-head" style="cursor:pointer;" onclick="toggleApp('${a.key}')">
+                        <span id="appchev_${a.key}" style="color:#aaa; width:14px; display:inline-block;">${open ? '▾' : '▸'}</span>
+                        <span class="hist-group-title">${escapeHtml(a.title || '제목 없음')}</span>
+                        ${statusBadgeHtml(a.status)}
+                        ${deadlineSummary ? `<span style="font-size:13px; color:#c0392b; margin-left:auto;">${deadlineSummary}</span>` : '<span style="margin-left:auto;"></span>'}
+                    </div>
+                    <div id="appbody_${a.key}" style="display:${open ? 'block' : 'none'}; margin-top:12px;">
+                        <div style="margin-bottom:10px;">
+                            <label style="font-size:13px; color:#666;">회사·공고명
+                                <input id="apptitle_${a.key}" value="${escapeAttr(a.title)}" placeholder="예: 카카오 - 백엔드 개발자" style="display:block; width:100%; margin-top:4px;" oninput="setAppTitle('${a.key}', this.value)">
+                            </label>
+                        </div>
+                        <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:center;">
+                            <label style="font-size:13px; color:#666;">상태
+                                <select onchange="setAppStatus('${a.key}', this.value)" style="margin-left:6px; padding:5px 8px; border:1px solid #ddd; border-radius:6px;">${statusOpts}</select>
+                            </label>
+                            <label style="font-size:13px; color:#666;">마감일
+                                <input type="date" value="${escapeAttr(a.deadline)}" onchange="setAppDeadline('${a.key}', this.value)" style="margin-left:6px; padding:4px 8px; border:1px solid #ddd; border-radius:6px;">
+                            </label>
+                            <button class="button secondary tiny" onclick="goToHistoryGroup('${a.key}')">지원 이력 보기</button>
+                        </div>
+                        <div style="margin-top:10px;">
+                            <div style="font-size:13px; color:#666; margin-bottom:2px;">공고 링크 <span style="color:#aaa; font-size:12px;">· 사이트별로 여러 개 가능</span></div>
+                            <div id="applinks_${a.key}">${appLinksHtml(a)}</div>
+                            <button class="button secondary tiny" style="margin-top:8px;" onclick="addAppLink('${a.key}')">+ 링크 추가</button>
+                        </div>
+                        <div style="margin-top:10px;">
+                            <textarea placeholder="메모 (전형 일정, 준비 사항 등)" style="width:100%; min-height:44px;" oninput="setAppNote('${a.key}', this.value)">${escapeHtml(a.note || '')}</textarea>
+                        </div>
+                        <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end; border-top:1px dashed #eee; padding-top:12px;">
+                            <button class="button secondary" onclick="deleteApp('${a.key}')">삭제</button>
+                            <button class="button" onclick="saveApp('${a.key}')">저장</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
         }
 
         // ── 지원 이력 저장 (localStorage['goHistory'] = [{id, ts, type, profileLabel, title, content, drafts}]) ──
@@ -2419,18 +2755,35 @@
         function addHistory({ type, title, content, drafts }) {
             if (!content) return;
             const profile = getProfile();
+            const key = jobKeyOf(title);
+            const list = loadHistory();
+            // 같은 공고(jobKey)·같은 종류의 기존 개수 + 1 = 버전 번호
+            const versionNo = list.filter(h => (h.jobKey || jobKeyOf(h.title)) === key && h.type === type).length + 1;
             const item = {
                 id: 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
                 ts: Date.now(),
                 type,
                 profileLabel: profile.label || profile.position || '',
                 title: title || '제목 없음',
-                jobKey: jobKeyOf(title),
+                jobKey: key,
+                versionNo,
+                versionLabel: '',
                 content,
                 drafts: Array.isArray(drafts) ? drafts : [],
             };
-            const list = loadHistory();
             list.unshift(item);
+            saveHistory(list);
+            ensureAppForJob(key, item.title);   // 지원 현황 대시보드에 자동 등록
+            renderHistory();
+        }
+        // 이력 항목 버전 이름 지정
+        function renameHistory(id) {
+            const list = loadHistory();
+            const h = list.find(x => x.id === id);
+            if (!h) return;
+            const v = prompt('이 버전의 이름을 입력하세요. (예: 최종본, 짧은버전)', h.versionLabel || '');
+            if (v === null) return;
+            h.versionLabel = v.trim();
             saveHistory(list);
             renderHistory();
         }
@@ -2485,12 +2838,14 @@
                     <div class="hist-row">
                         <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:4px;">
                             <span class="hist-badge ${h.type}">${HISTORY_TYPES[h.type] || h.type}</span>
+                            ${h.versionNo ? `<span style="background:#eef0ff; color:#5560a8; font-size:11px; padding:1px 7px; border-radius:8px;">v${h.versionNo}${h.versionLabel ? ' · ' + escapeHtml(h.versionLabel) : ''}</span>` : ''}
                             <span style="color:#aaa; font-size:12px; margin-left:auto;">${fmtDate(h.ts)}</span>
                         </div>
                         <div style="color:#777; font-size:13px; line-height:1.5; white-space:pre-wrap;">${preview}${String(h.content).length > 110 ? '…' : ''}</div>
                         <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
                             <button class="button secondary tiny" onclick="viewHistory('${h.id}')">열기</button>
                             <button class="button secondary tiny" onclick="copyHistory('${h.id}')">복사</button>
+                            <button class="button secondary tiny" onclick="renameHistory('${h.id}')">이름</button>
                             <button class="button secondary tiny" onclick="downloadHistory('${h.id}','txt')">TXT</button>
                             <button class="button secondary tiny" onclick="downloadHistory('${h.id}','doc')">Word</button>
                             <button class="button secondary tiny" onclick="deleteHistory('${h.id}')">삭제</button>
@@ -2499,14 +2854,18 @@
                     </div>`;
                 }).join('');
                 const kinds = items.map(h => HISTORY_TYPES[h.type] || h.type).join(' · ');
+                const app = getApp(g.key);
                 return `
                 <div class="hist-group">
                     <div class="hist-group-head">
                         <span class="hist-group-title">${escapeHtml(g.title || '제목 없음')}</span>
+                        ${app ? statusBadgeHtml(app.status) : ''}
+                        ${app && app.deadline ? `<span style="font-size:12px; color:#c0392b;">${escapeHtml(dDay(app.deadline))}</span>` : ''}
                         ${g.profileLabel ? `<span style="background:#f0eee6; color:#555; font-size:12px; padding:2px 8px; border-radius:10px;">${escapeHtml(g.profileLabel)}</span>` : ''}
                         <span style="color:#aaa; font-size:12px; margin-left:auto;">${items.length}개 · ${escapeHtml(kinds)}</span>
                     </div>
                     ${rows}
+                    ${compareControlsHtml(g)}
                     <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap; border-top:1px dashed #eee; padding-top:10px;">
                         <span style="font-size:12px; color:#999; align-self:center;">묶음 내보내기</span>
                         <button class="button secondary tiny" onclick="downloadGroup('${g.key}','txt')">전체 TXT</button>
@@ -2514,6 +2873,57 @@
                     </div>
                 </div>`;
             }).join('');
+        }
+
+        // ── 자소서/이력서 버전 비교 ──
+        function versionItems(key, type) {
+            return loadHistory()
+                .filter(h => (h.jobKey || jobKeyOf(h.title)) === key && h.type === type)
+                .sort((a, b) => (a.versionNo || 0) - (b.versionNo || 0));
+        }
+        function vLabel(h) {
+            return `v${h.versionNo || 1}${h.versionLabel ? ' · ' + h.versionLabel : ''} (${fmtDate(h.ts)})`;
+        }
+        function compareControlsHtml(g) {
+            const types = ['cover', 'resume'].filter(t => g.items.filter(h => h.type === t).length >= 2);
+            if (!types.length) return '';
+            const btns = types.map(t =>
+                `<button class="button secondary tiny" onclick="openVersionCompare('${g.key}','${t}')">${HISTORY_TYPES[t]} 버전 비교</button>`
+            ).join('');
+            return `<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                <span style="font-size:12px; color:#999;">버전</span>${btns}
+                <div id="cmp_${g.key}" style="flex-basis:100%;"></div>
+            </div>`;
+        }
+        function openVersionCompare(key, type) {
+            const box = document.getElementById('cmp_' + key);
+            if (!box) return;
+            if (box.dataset.type === type && box.innerHTML) { box.innerHTML = ''; box.dataset.type = ''; return; }
+            box.dataset.type = type;
+            renderVersionCompare(key, type);
+        }
+        function renderVersionCompare(key, type, aId, bId) {
+            const box = document.getElementById('cmp_' + key);
+            if (!box) return;
+            const items = versionItems(key, type);
+            if (items.length < 2) { box.innerHTML = ''; return; }
+            const a = items.find(x => x.id === aId) || items[items.length - 2];
+            const b = items.find(x => x.id === bId) || items[items.length - 1];
+            const opts = sel => items.map(h => `<option value="${h.id}" ${h.id === sel ? 'selected' : ''}>${escapeHtml(vLabel(h))}</option>`).join('');
+            box.innerHTML = `
+                <div style="margin-top:10px; border:1px solid #eee; border-radius:8px; padding:12px;">
+                    <div style="font-size:13px; color:#888; margin-bottom:8px;">${HISTORY_TYPES[type]} 버전 비교</div>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:240px;">
+                            <select onchange="renderVersionCompare('${key}','${type}', this.value, '${b.id}')" style="width:100%; margin-bottom:6px; padding:6px;">${opts(a.id)}</select>
+                            <div class="output-box" style="max-height:360px; overflow:auto;">${escapeHtml(a.content)}</div>
+                        </div>
+                        <div style="flex:1; min-width:240px;">
+                            <select onchange="renderVersionCompare('${key}','${type}','${a.id}', this.value)" style="width:100%; margin-bottom:6px; padding:6px;">${opts(b.id)}</select>
+                            <div class="output-box" style="max-height:360px; overflow:auto;">${escapeHtml(b.content)}</div>
+                        </div>
+                    </div>
+                </div>`;
         }
 
         function viewHistory(id) {
@@ -2834,6 +3244,7 @@
             loadData();            // 구버전 'profile' → 'goData' 마이그레이션 수행
             renderProfileSwitcher();
             renderFactList();      // 검증된 성과·수치 목록 복원
+            renderCoverQuestions();// 저장된 자소서 문항 복원
             const p = getProfile();
             if (p.position) {
                 // 이미 내용이 있는 활성 직무 → 읽기 전용 보기 화면
