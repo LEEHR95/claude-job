@@ -2071,8 +2071,8 @@
                     <div class="output-box">${escapeHtml(data.text)}</div>
                     <div style="margin-top: 15px;">
                         <button class="button secondary" onclick="copyToClipboard('${outputId}')">복사</button>
-                        <button class="button secondary" onclick="downloadText('${filePrefix}_${Date.now()}.txt', document.querySelector('#${outputId} .output-box').innerText)">TXT</button>
-                        <button class="button secondary" onclick="downloadDoc('${filePrefix}_${Date.now()}.doc', document.querySelector('#${outputId} .output-box').innerText)">Word</button>
+                        <button class="button secondary" onclick="downloadText('${jobFileBase(historyType, historyTitle)}.txt', document.querySelector('#${outputId} .output-box').innerText)">TXT</button>
+                        <button class="button secondary" onclick="downloadDoc('${jobFileBase(historyType, historyTitle)}.doc', document.querySelector('#${outputId} .output-box').innerText)">Word</button>
                     </div>
                 `;
                 if (historyType) {
@@ -2320,7 +2320,7 @@
             if (!force) {
                 const hit = getGenCache(key);
                 if (hit && hit.merged) {
-                    renderEnsemble({ outputId, alertId, data: hit, filePrefix, regen, fromCache: true });
+                    renderEnsemble({ outputId, alertId, data: hit, filePrefix, regen, fromCache: true, historyType, historyTitle });
                     return;
                 }
             }
@@ -2338,7 +2338,7 @@
 
                 hideLoading();
                 setGenCache(key, { drafts: data.drafts, merged: data.merged });
-                renderEnsemble({ outputId, alertId, data, filePrefix, regen, fromCache: false });
+                renderEnsemble({ outputId, alertId, data, filePrefix, regen, fromCache: false, historyType, historyTitle });
                 if (historyType) {
                     addHistory({ type: historyType, title: historyTitle, content: data.merged || '', drafts: data.drafts || [] });
                 }
@@ -2348,7 +2348,7 @@
             }
         }
 
-        function renderEnsemble({ outputId, alertId, data, filePrefix, regen, fromCache }) {
+        function renderEnsemble({ outputId, alertId, data, filePrefix, regen, fromCache, historyType, historyTitle }) {
             const merged = data.merged || '';
             const drafts = Array.isArray(data.drafts) ? data.drafts : [];
             const mergedId = outputId + '_merged';
@@ -2367,8 +2367,8 @@
                 <div class="output-box" id="${mergedId}">${escapeHtml(merged)}</div>
                 <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
                     <button class="button secondary" onclick="copyText('${mergedId}')">복사</button>
-                    <button class="button secondary" onclick="downloadText('${filePrefix}_${Date.now()}.txt', document.getElementById('${mergedId}').innerText)">TXT</button>
-                    <button class="button secondary" onclick="downloadDoc('${filePrefix}_${Date.now()}.doc', document.getElementById('${mergedId}').innerText)">Word</button>
+                    <button class="button secondary" onclick="downloadText('${jobFileBase(historyType, historyTitle)}.txt', document.getElementById('${mergedId}').innerText)">TXT</button>
+                    <button class="button secondary" onclick="downloadDoc('${jobFileBase(historyType, historyTitle)}.doc', document.getElementById('${mergedId}').innerText)">Word</button>
                     <button class="button secondary" onclick="${regen}(true)">다시 생성</button>
                 </div>
                 <div id="${outputId}_fcreport" class="fc-report"></div>
@@ -2384,6 +2384,14 @@
         // ── 지원 이력 저장 (localStorage['goHistory'] = [{id, ts, type, profileLabel, title, content, drafts}]) ──
         const HISTORY_TYPES = { analysis: '공고 분석', cover: '자기소개서', resume: '이력서' };
         const HISTORY_MAX = 50;
+
+        // 다운로드 파일명: "종류_공고명" (공고명 없으면 타임스탬프로 대체)
+        function jobFileBase(type, title) {
+            const label = HISTORY_TYPES[type] || type || '문서';
+            const t = String(title || '').replace(/[\\/:*?"<>|'`\n\r]/g, '').trim().slice(0, 30);
+            const isEmpty = !t || t === '제목 없음' || t === '제목없음';
+            return isEmpty ? `${label}_${Date.now()}` : `${label}_${t}`;
+        }
 
         // 공고 본문에서 제목 추출 (첫 줄, 없으면 앞 30자)
         // 공고 본문에서 제목 추출. OCR 노이즈(깨진 글자) 줄은 건너뛰고
