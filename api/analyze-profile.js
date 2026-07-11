@@ -22,14 +22,14 @@ ${resumeText}
 
 {
   "position": "지원(희망) 직무. 명확하지 않으면 가장 가능성 높은 직무를 추정",
-  "experience": "총 경력 연수를 숫자 문자열로. 예: \\"3\\". 신입/불명확이면 \\"0\\"",
+  "experience": "이력서의 모든 근무 이력(회사별 재직 기간)을 근거로 산출한 총 경력 연수를 숫자 문자열로. 예: \\"3\\". 신입/불명확이면 \\"0\\"",
   "skills": [
-    { "name": "기술명. 예: \\"Java\\"", "detail": "정량 정보(버전·기간·규모 등). 예: \\"8/11, 약 1만 줄\\". 없으면 빈 문자열. 상/중/하 같은 주관적 표현은 쓰지 말 것" }
+    { "name": "기술명. 예: \\"Java\\"", "detail": "이력서 원문에 실제로 적힌 활용 역량·용도·정량 정보만. 예: \\"브랜드·패키지·SNS 콘텐츠 제작\\", \\"8/11, 약 1만 줄\\". 원문에 없으면 빈 문자열. 상/중/하 같은 주관적 표현이나 \\"5년 이상 사용\\"처럼 원문에 없는 근속·숙련 기간을 지어내지 말 것" }
   ],
   "projects": "주요 프로젝트와 역할·성과를 2~4줄로 요약 (projectCards를 못 만들 때의 대비용)",
   "projectCards": [
     {
-      "title": "프로젝트명",
+      "title": "프로젝트의 실제 이름. 원문에 \\"Project 1 | OOO\\", \\"프로젝트: OOO\\" 처럼 제목이 있으면 그 이름을 그대로. 절대 사용 기술·툴(Python, Streamlit 등)을 제목으로 쓰지 말 것. 이름이 없으면 무엇을 만들었는지 짧은 명사구로(예: \\"반려견 화식 영양 분석 시스템\\")",
       "period": "기간(있으면). 예: \\"2024.01 ~ 2024.06\\". 없으면 빈 문자열",
       "role": "지원자 본인의 역할. 예: \\"서비스 기획 리드\\"",
       "summary": "프로젝트 한 줄 요약",
@@ -50,7 +50,7 @@ ${resumeText}
     }
   ],
   "strengths": "직무 관련 강점을 2~3줄로 요약",
-  "education": ["학력·교육 이력. 국비/학원 과정은 핵심만 담백하게(예: \\"웹 개발자 과정(백엔드/프론트엔드) 6개월\\"). 없으면 빈 배열"],
+  "education": ["학력·교육 이력. 이력서에 나온 기관명과 학위/과정명을 원문 그대로 사용(예: \\"문산여자고등학교 졸업\\", \\"그린컴퓨터아카데미 편집·시각디자인 실무과정 수료\\"). 학위 수준을 임의로 올리거나(고등학교→학사 금지) 과정명을 다른 말로 바꾸지 말 것. 이력서의 모든 학력·교육 항목을 빠짐없이. 없으면 빈 배열"],
   "certifications": ["자격증 항목. 없으면 빈 배열"],
   "awards": ["수상·대외활동 항목. 없으면 빈 배열"],
   "links": ["GitHub/블로그/포트폴리오 링크. 가능하면 \\"설명 | URL\\" 형태로. 없으면 빈 배열"],
@@ -65,11 +65,13 @@ ${resumeText}
   }
 }
 
-- 이력서에 없는 정보는 비워두지 말고 합리적으로 추정하되, 추정한 항목은 uncertain 배열에 넣으세요.
+- [중요] 이력서에 실제로 쓰인 고유명사(프로젝트명·회사명·학교명·과정명·자격증명)와 날짜·수치·표현은 **원문 그대로** 사용하세요. 요약·일반화하거나 다른 말로 바꾸거나 없는 내용을 지어내지 마세요. 원문이 깨져 판독이 안 되거나 해당 정보가 없으면, 그 항목은 비우고(빈 문자열/빈 배열) 억지로 만들지 마세요.
+- position/experience/strengths처럼 해석이 필요한 항목만 이력서 근거로 합리적 추정이 가능하며, 추정한 항목은 uncertain 배열에 넣으세요. 학력·경력·프로젝트·회사명 등 사실 정보는 추정하지 마세요.
 - uncertain의 값은 반드시 위 5개 키 이름(position, experience, skills, projects, strengths) 중 하나여야 합니다.
 - evidence의 각 값은 "왜 그렇게 판단했는가"를 이력서 근거에 기반해 한국어 한 줄로 적으세요. 추측이면 추측이라고 밝히세요.
 - projectCards: 이력서/자기소개서에 드러난 프로젝트를 **프로젝트 단위로 분리**해 카드로 만드세요. 원문에 없는 성과를 지어내지 말고, 불확실하면 해당 항목을 비우세요. 프로젝트를 식별할 수 없으면 빈 배열 []을 넣으세요.
-- careerCards: 이력서의 **경력 사항(재직했던 회사별 이력)**을 회사 단위로 분리해 카드로 만드세요. projectCards가 '무엇을 만들었나'라면 careerCards는 '어디서 일했나'입니다. 같은 회사 안의 여러 프로젝트는 한 회사 카드의 contributions로 묶으세요. 회사명이 드러나지 않으면 빈 배열 []을 넣으세요. 원문에 없는 회사·기간·성과를 지어내지 마세요.`;
+- projectCards의 title은 반드시 '프로젝트 이름'이어야 하며, 사용 기술·툴(techStack)을 title에 넣으면 안 됩니다. 기술명은 techStack에만 넣으세요.
+- careerCards: 이력서에 등장하는 **모든 근무 이력(정규직·계약직·창업·아르바이트 포함)**을 빠짐없이 회사 단위로 분리해 카드로 만드세요. projectCards가 '무엇을 만들었나'라면 careerCards는 '어디서 일했나'입니다. 같은 회사 안의 여러 프로젝트는 한 회사 카드의 contributions로 묶으세요. 회사명이 드러나지 않으면 빈 배열 []을 넣으세요. 원문에 없는 회사·기간·성과를 지어내지 마세요.`;
 
   try {
     const raw = await callSolar([{ role: 'user', content: prompt }], 3000);
@@ -129,6 +131,7 @@ function parseProfileJson(raw) {
     skills: sanitizeSkills(parsed.skills),
     projects: String(parsed.projects || '').trim(),
     projectCards: sanitizeCards(parsed.projectCards),
+    careerCards: sanitizeCareerCards(parsed.careerCards),
     strengths: String(parsed.strengths || '').trim(),
     education: toStrArray(parsed.education),
     certifications: toStrArray(parsed.certifications),
@@ -181,4 +184,23 @@ function sanitizeCards(cards) {
       tags: arr(c.tags),
     }))
     .filter((c) => c.title || c.summary || c.contributions.length);
+}
+
+// AI가 추출한 경력 카드(회사별 이력)를 안전하게 정리
+function sanitizeCareerCards(cards) {
+  if (!Array.isArray(cards)) return [];
+  const str = (v) => String(v == null ? '' : v).trim();
+  const arr = (v) =>
+    Array.isArray(v) ? v.map(str).filter(Boolean) : (str(v) ? [str(v)] : []);
+  return cards
+    .filter((c) => c && typeof c === 'object')
+    .map((c) => ({
+      company: str(c.company),
+      period: str(c.period),
+      role: str(c.role),
+      summary: str(c.summary),
+      contributions: arr(c.contributions),
+      outcomes: arr(c.outcomes),
+    }))
+    .filter((c) => c.company);
 }

@@ -1289,6 +1289,30 @@
             return text;
         }
 
+        // PDF가 CID 폰트(ToUnicode 없음) 등으로 한글이 깨져 추출됐는지 판정.
+        // 정상 한글 음절(가–힣)은 거의 없고, CJK 확장·기호·PUA 같은 '깨짐 신호' 글자가
+        // 다수면 깨진 것으로 본다. (영어만 있는 이력서 오탐 방지: garble 신호 글자 기준)
+        function koreanTextLooksBroken(text) {
+            const t = text || '';
+            const hangul = (t.match(/[가-힣]/g) || []).length;
+            const garble = (t.match(/[⺀-㏿㐀-䶿豈-﫿-]/g) || []).length;
+            return garble >= 20 && garble > hangul;
+        }
+
+        // 깨진 PDF를 Upstage OCR(서버)로 다시 읽어 실제 텍스트를 얻는다.
+        // ocr-job.js는 imageBase64 필드로 PDF도 그대로 처리(mimeType로 구분).
+        async function pdfToOcrText(file) {
+            const base64 = await fileToBase64(file);
+            const resp = await fetch('/api/ocr-job', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageBase64: base64, filename: file.name, mimeType: 'application/pdf' }),
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || `OCR 오류 ${resp.status}`);
+            return (data.text || '').trim();
+        }
+
         // API(Vercel Function) 호출 가능 환경인지 (file://는 불가 → CORS)
         function isApiAvailable() {
             return location.protocol === 'http:' || location.protocol === 'https:';
@@ -1323,6 +1347,23 @@
                 const buffer = await file.arrayBuffer();
                 if (ext === 'pdf') {
                     text = await extractPdfText(buffer);
+                    // CID 폰트 등으로 한글이 깨져 추출된 경우 → Upstage OCR로 재추출
+                    if (koreanTextLooksBroken(text)) {
+                        if (!isApiAvailable()) {
+                            throw new Error('이 PDF는 한글 텍스트가 깨져 추출됩니다. Word(docx)로 저장하거나 텍스트를 직접 붙여넣어 주세요. (OCR은 vercel dev/배포 환경에서만 가능)');
+                        }
+                        statusEl.innerHTML = `"${escapeHtml(file.name)}"의 한글이 깨져 OCR로 다시 읽는 중입니다... (Upstage OCR)`;
+                        let ocrText = '';
+                        try {
+                            ocrText = await pdfToOcrText(file);
+                        } catch (e) {
+                            throw new Error(`PDF 한글이 깨져 있고 OCR도 실패했습니다: ${e.message}. Word(docx)로 저장하거나 텍스트를 직접 붙여넣어 주세요.`);
+                        }
+                        if (!ocrText || koreanTextLooksBroken(ocrText)) {
+                            throw new Error('PDF에서 한글 텍스트를 제대로 읽지 못했습니다. Word(docx)로 저장하거나 텍스트를 직접 붙여넣어 주세요.');
+                        }
+                        text = ocrText;
+                    }
                 } else if (ext === 'docx') {
                     const result = await mammoth.extractRawText({ arrayBuffer: buffer });
                     text = result.value;
@@ -1361,7 +1402,7 @@
                 const cardN = Array.isArray(data.projectCards) ? data.projectCards.length : 0;
                 statusEl.innerHTML =
                     `<div style="color:#388e3c; font-weight:600;">"${escapeHtml(file.name)}"에서 정보를 추출했습니다.${cardN ? ` (프로젝트 ${cardN}개 포함)` : ''}</div>
-                     <button class="button" style="margin-top:10px;" onclick="applyPendingAnalysis()">프로필에 반영하기</button>`;
+                     <button class="button" style="margin-top:10px;" onclick="event.stopPropagation(); applyPendingAnalysis()">프로필에 반영하기</button>`;
             } catch (error) {
                 statusEl.innerHTML = `<span style="color:#d32f2f;">${escapeHtml(error.message)}</span>`;
             }

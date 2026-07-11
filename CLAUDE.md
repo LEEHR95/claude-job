@@ -71,3 +71,4 @@
 | 2026-06-28 | 프로필 경력 사항 카드(회사별 이력) 신규 + 자소서 첨부 UI 개선 | index.html, api/analyze-profile.js, api/_upstage.js | 회사별 경력 입력칸 부재 해결 + 첨부 명확화 |
 | 2026-06-28 | 자소서 문항별 작성 + 지원현황 대시보드 + 자소서 버전관리 + 적합도 매칭 버그수정 + 다운로드 파일명 공고명화 | index.html, api/generate-cover-letter.js | 지원 관리 루프 강화 + 적합도 오작동 수정 |
 | 2026-06-29 | 지원현황+지원이력 → '지원 관리' 한 탭 통합(union) + jobKeyOf 한글 '_' 충돌 버그수정/마이그레이션 | index.html | 기능 중복 해소 + 한글 제목 그룹핑 정상화 |
+| 2026-07-11 | 프로필 분석 버그3종: 드롭존 첨부창(stopPropagation)·깨진PDF 할루시네이션(감지→OCR 폴백)·careerCards 서버누락 + 프롬프트 충실도 강화 | index.html, api/analyze-profile.js | 할루시네이션/경력 미반영/오조작 해결 |

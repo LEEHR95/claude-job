@@ -2,11 +2,11 @@
 
 ## 마지막 세션
 <!-- /co가 이 섹션 전체를 덮어씁니다 (다음 "##"까지) -->
-- 날짜: 2026-06-28
-- 요약(2026-06-28): 오전 — 경력 사항 카드(careerCards) + 자소서 첨부 UI 개선(displayDocStatus 초록박스/교체). 오후 — 대형 기능 3종 + 버그수정. (A)자소서 문항별 작성 — 자소서 탭 #coverQuestions(문항+글자수, localStorage['coverQuestions']), getCoverQuestions→payload.questions. api/generate-cover-letter.js: questions 있으면 동적 문항 섹션(글자수 제한), 없으면 기존 4섹션. renderEnsemble에 countByQuestions(문항 헤더 토큰매칭으로 문항별 글자수/제한 표시). (B)지원 현황 새 탭(#status) — localStorage['goApplications'] {key,title,status,deadline,links[{label,url}],note}, APP_STATUS 6단계, dDay, statusBadgeHtml. addHistory가 ensureAppForJob로 자동등록. 아코디언 카드(접힘=제목·상태·마감일 한 줄, 펼침 편집, _openApps로 펼침유지) + 우측하단 [저장](saveApp: 접기+재정렬+토스트) + 정렬 3종(마감/등록일/변경). +지원추가는 팝업 없이 빈 카드 펼쳐 apptitle 인라인 입력. 세터는 재렌더 안 함(setApp*), 링크는 renderAppLinks 부분렌더. (C)자소서 버전관리 — addHistory에 versionNo/versionLabel, renderHistory에 v배지+[이름](renameHistory), 같은 type≥2면 [버전 비교](openVersionCompare/renderVersionCompare 좌우 2단). (버그)적합도 0% — getMyTerms가 스킬명만·통째 정확일치라 'AI 모델..'속 ai 등 못잡음. getMyProfileText(스킬명+상세+카드/경력 전체) tokenize + myText.includes 부분일치로 수정, vocab=COMMON∪내토큰. matchProjectsToJob도 토큰 부분일치. (실데이터 0%→83% 검증). (D)생성결과 다운로드 파일명 jobFileBase(종류_공고명). (E)2026-06-29 — 지원현황+지원이력을 '지원 관리' 한 탭으로 통합(union: 앱∪문서묶음, 회사1=카드1, 펼치면 상태/마감/링크/메모 + 그 공고 문서·버전·비교·묶음내보내기). 결과화면 버튼 '지원 관리에서 열기'(addToApplications: ensure+펼침+이동). 세터에 touchApp(문서만 있는 공고 편집 시 앱 생성), deleteJob(앱+문서 통째). jobKeyOf 버그수정 — \W가 한글을 다 지워 한글제목들이 '_'로 뭉치던 것 → [^0-9a-z가-힣] 화이트리스트, migrateJobKeys로 기존 저장분 1회 재계산. export/import에 goApplications/coverQuestions 추가. 지원이력 탭/renderHistory는 제거(함수는 잔존, 미사용).
-- 이전 요약(2026-06-25): UI 개편 — 우측 sticky 사이드바, 지원이력 공고별 묶음(jobKey), Word/묶음 내보내기, 적합도, 새 공고 초기화.
-- 이전 요약(2026-06-24): P2 완료 — 공고↔프로젝트 매칭, 작성규칙화, 프로필 병합업로드+4섹션, 스킬 배열화, 지원이력 저장(goHistory), 사실검증, OCR 제목버그.
-- 다음 할 일: ① [완료] 지원이력+지원현황 통합('지원 관리') + jobKeyOf 한글버그 수정. ② Vercel 배포(미배포 — 06-28~29 작업 전부 로컬 커밋만) ③ 배포본에서 통합탭·자소서 문항별·적합도 실동작 확인 ④ 통합탭 실데이터로 카드 펼침/문서/버전/마이그레이션 눈으로 확인. (운영) UPSTAGE_API_KEY 확인.
+- 날짜: 2026-07-11
+- 요약(2026-07-11): 프로필 AI 분석의 버그 3종 + 할루시네이션 수정(이하린 이력서로 검증). (1)드롭존 첨부창 버그 — handleResumeUpload가 주입하는 '프로필에 반영하기' 버튼(index.html:1364)에 event.stopPropagation()이 없어, 드롭존 #resumeDropZone의 onclick(파일창 열기)으로 전파돼 클릭 시 파일창이 뜸 → stopPropagation 추가. (2)할루시네이션 근본원인 = CID폰트 PDF 한글깨짐 — 이 PDF는 ToUnicode 없어 pdf.js it.str이 CJK확장/기호/PUA로 깨져 나옴(예 '㢨䚌⫤'). AI는 안 깨지는 영어토큰(Python·OCR)·숫자날짜만 신뢰하고 프로젝트명·학력·강점(한글)을 지어냄(고등학교→'그래픽 디자인 학사'). 대응: koreanTextLooksBroken(index.html — 가-힣 수 대비 garble[⺀-㏿㐀-䶿豈-﫿PUA]≥20 && garble>hangul) 감지 → 깨지면 pdfToOcrText로 fileToBase64 후 /api/ocr-job에 mimeType:'application/pdf' 전송(Upstage document-digitization은 PDF 직접입력). OCR 신뢰도0.95·모든 고유명사 정상추출 검증. (3)careerCards 서버누락 버그(숨은 원인) — 프론트(index.html:1547)는 analysis.careerCards를 병합하는데 서버 parseProfileJson 반환에 careerCards가 아예 없어 AI 경력카드가 늘 빈배열이었음 → sanitizeCareerCards() 추가 + 반환에 포함(경력 7건 전부 검증). (4)프롬프트 충실도(api/analyze-profile.js) — 고유명사(프로젝트/회사/학교/과정명)·날짜·수치 원문 그대로, 요약·일반화·학위상향(고등학교→학사) 금지, 사실정보 추정 금지(position/experience/strengths만 추정 허용), education·careerCards 빠짐없이 모두, skills detail은 원문 활용역량만('5년 이상 사용' 등 근속 지어내기 금지), projectCards.title에 기술명 금지.
+- 이전 요약(2026-06-29): 지원현황+지원이력을 '지원 관리' 한 탭 통합(union) + jobKeyOf 한글 '_' 충돌 버그수정/마이그레이션.
+- 이전 요약(2026-06-28): 자소서 문항별 작성 + 지원현황 대시보드 + 자소서 버전관리 + 적합도 버그수정 + 경력 카드 신규.
+- 다음 할 일: ① UI(localhost:3001)에서 이력서 재업로드해 드롭존 클릭(파일창 안 뜸)·OCR 폴백·경력 7건 카드 눈으로 확인 ② Vercel 배포(06-28~07-11 작업 전부 로컬 커밋만) ③ 정상(텍스트) PDF·영어전용 이력서로 koreanTextLooksBroken 오탐 없는지 확인. (운영) UPSTAGE_API_KEY 확인.
 
 ## 의사결정 이력
 
@@ -31,6 +31,7 @@
 | 2026-06-25 | Word 내보내기를 HTML→.doc(msword)로 | 라이브러리 없이 Word/한글에서 바로 열림. 단일 HTML 유지 | docx 생성 라이브러리 추가, PDF 변환 |
 | 2026-06-28 | 경력 사항을 projectCards와 동일한 카드 구조로 분리 | '경력=년수 숫자 한 칸'은 회사별 이력을 담지 못함. 검증된 프로젝트 카드 패턴/CSS 재사용으로 위험 최소화 | experience 한 칸 유지, 경력을 자유 텍스트 한 칸으로 |
 | 2026-06-28 | 자소서 첨부를 기본 file input→상태박스+버튼으로 | 기본 input이 항상 '선택된 파일 없음'을 노출해 첨부 여부 혼란. 첨부 강조+클릭 교체로 명확화 | 기본 input 유지, 라벨만 추가 |
+| 2026-07-11 | 깨진(CID폰트) PDF를 Upstage OCR로 자동 폴백 | pdf.js가 한글을 깨뜨려 추출→AI가 지어냄. 기존 OCR 파이프라인 재사용해 진짜 텍스트 확보(가장 확실한 할루시네이션 차단) | 감지 후 경고만/사용자에게 docx·붙여넣기 유도 |
 
 ## 세션 로그
 <!-- 최근 5개만 유지. 초과 시 WIKI.md "세션 아카이브"로 이동. 추가만, 수정 금지 -->
@@ -44,3 +45,4 @@
 | 2026-06-25 | 우측 sticky 사이드바+본문 독립스크롤 + 지원이력 공고별 묶음 + Word/묶음 내보내기 + 적합도(빠진 키워드) + 새 공고 초기화 | index.html |
 | 2026-06-28 | 프로필 경력 사항 카드(회사별 이력) 신규 + 자소서 첨부 UI 개선(현재 첨부 강조/클릭 교체) | index.html, api/analyze-profile.js, api/_upstage.js |
 | 2026-06-28 | 자소서 문항별 작성 + 지원현황 대시보드(아코디언/저장/정렬) + 자소서 버전관리 + 적합도 매칭 버그수정 + 다운로드 파일명 공고명화 | index.html, api/generate-cover-letter.js |
+| 2026-07-11 | 프로필 분석 버그3종 수정: 드롭존 첨부창(stopPropagation) + 깨진PDF 할루시네이션(koreanTextLooksBroken 감지→OCR 폴백) + careerCards 서버누락(sanitizeCareerCards) + 프롬프트 충실도 강화 | index.html, api/analyze-profile.js |
